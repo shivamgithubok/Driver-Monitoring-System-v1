@@ -35,9 +35,15 @@ import argparse
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from insightface.app import FaceAnalysis
+from utils import get_logger
+from config import (
+    FACE_DB_DIR as DB_DIR,
+    FACE_PREVIEW_DIR as PREVIEW_DIR,
+    LIVENESS_THRESHOLD
+)
 
-DB_DIR      = "face_db"
-PREVIEW_DIR = "face_preview"
+logger = get_logger("face")
+
 os.makedirs(DB_DIR, exist_ok=True)
 os.makedirs(PREVIEW_DIR, exist_ok=True)
 
@@ -45,7 +51,7 @@ os.makedirs(PREVIEW_DIR, exist_ok=True)
 def load_recognition_model(cpu=False):
     app = FaceAnalysis(name="buffalo_l")
     app.prepare(ctx_id=-1 if cpu else 0, det_size=(640, 640))
-    print("[INFO] InsightFace buffalo_l loaded.")
+    logger.info("InsightFace buffalo_l loaded.")
     return app
 
 
@@ -98,13 +104,12 @@ def passive_liveness_check(frame, bbox, debug=False):
     score = (0.45 * lap_score) + (0.35 * lbp_score) + (0.20 * sat_score)
     score = float(np.clip(score, 0.0, 1.0))
 
-    LIVENESS_THRESHOLD = 0.40
     is_real = score >= LIVENESS_THRESHOLD
 
     if debug:
-        print(f"  [Liveness] lap={lap_score:.3f}  lbp={lbp_score:.3f}  "
-              f"sat={sat_score:.3f}  final={score:.3f}  -> "
-              f"{'REAL' if is_real else 'SPOOF'}")
+        logger.debug(f"[Liveness] lap={lap_score:.3f}  lbp={lbp_score:.3f}  "
+                     f"sat={sat_score:.3f}  final={score:.3f}  -> "
+                     f"{'REAL' if is_real else 'SPOOF'}")
 
     label = f"{'REAL' if is_real else 'SPOOF'} ({score:.2f})"
     return label, score, is_real
@@ -137,7 +142,7 @@ def draw_status(frame, lines, start_y=40, color=(255, 255, 0)):
 def save_embedding(name, embedding):
     path = os.path.join(DB_DIR, f"{name}.npy")
     np.save(path, embedding)
-    print(f"[INFO] Embedding saved -> {path}")
+    logger.info(f"Embedding saved -> {path}")
 
 
 def load_embedding(name):
@@ -170,10 +175,10 @@ def print_pipeline():
 
 
 def enroll_mode(app, name, camera_id=0, debug=False):
-    print("=" * 60)
-    print(f"[ENROLL MODE] User: {name}")
-    print(" Press 's' to capture  |  'q' to quit")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info(f"[ENROLL MODE] User: {name}")
+    logger.info(" Press 's' to capture  |  'q' to quit")
+    logger.info("=" * 60)
 
     cap = open_camera(camera_id)
 
@@ -204,17 +209,17 @@ def enroll_mode(app, name, camera_id=0, debug=False):
 
         if key == ord('s'):
             if face is None:
-                print("[WARN] No face in frame.")
+                logger.warning("No face in frame.")
             elif not is_real:
-                print(f"[WARN] Liveness FAILED ({liv_label}). Use a real face.")
+                logger.warning(f"Liveness FAILED ({liv_label}). Use a real face.")
             else:
                 save_preview(frame_disp, f"enrolled_{name}.jpg")
                 save_embedding(name, face.embedding)
-                print(f"[OK] Enrolled '{name}' successfully.")
+                logger.info(f"Enrolled '{name}' successfully.")
                 break
 
         elif key == ord('q'):
-            print("[INFO] Enroll cancelled.")
+            logger.info("Enroll cancelled.")
             break
 
     cap.release()
@@ -222,10 +227,10 @@ def enroll_mode(app, name, camera_id=0, debug=False):
 
 
 def verify_mode(app, name, threshold=0.45, camera_id=0, debug=False):
-    print("=" * 60)
-    print(f"[VERIFY MODE] User: {name}  threshold={threshold}")
-    print(" Press 'q' to quit")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info(f"[VERIFY MODE] User: {name}  threshold={threshold}")
+    logger.info(" Press 'q' to quit")
+    logger.info("=" * 60)
 
     enrolled_emb = load_embedding(name)
     cap = open_camera(camera_id)
@@ -279,7 +284,7 @@ def verify_mode(app, name, threshold=0.45, camera_id=0, debug=False):
 
         cv2.imshow("Verify", frame_disp)
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            print("[INFO] Verify stopped.")
+            logger.info("Verify stopped.")
             break
 
     cap.release()

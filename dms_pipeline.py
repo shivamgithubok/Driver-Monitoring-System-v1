@@ -1,23 +1,3 @@
-# ============================================================
-# DMS PIPELINE  —  fixed version
-#
-# Key fixes vs previous version:
-#   1. Speaker ID runs ONCE at segment-end on full audio (not mid-stream)
-#      → eliminates CPU spike, fixes latency, gives TitaNet enough audio
-#   2. Removed `continue` inside `elif state == "continue"` block
-#      → that was silently dropping mic chunks and starving the queue
-#   3. BERT risk capped at 0.55 so sentiment alone can never fire CRITICAL
-#      → only keyword hits can reach WARNING/CRITICAL on their own
-#   4. UNKNOWN speaker weight raised to 0.85 (was 0.6) so real alerts
-#      still fire even before enrolment
-#   5. Graceful shutdown — no sys.exit() in signal handler; let the loop
-#      exit cleanly so torch teardown doesn't core-dump
-#   6. Enrollment audio pre-filtered to speech-only frames before enrol
-#      → better voiceprint quality
-#   7. Speaker smoothing: rolling window of last N scores, majority vote
-#      → stops flip-flopping between DRIVER / UNCERTAIN
-# ============================================================
-
 import os
 import time
 import queue
@@ -43,39 +23,22 @@ except ImportError:
     SPEAKER_AVAILABLE = False
     print("[WARN] speaker_register.py not found — speaker ID disabled")
 
-# ============================================================
-# CONFIG
-# ============================================================
 
 SR          = 16000
 CHUNK_MS    = 30
-CHUNK       = int(SR * CHUNK_MS / 1000)   # 480 samples
+CHUNK       = int(SR * CHUNK_MS / 1000)   
 CHANNELS    = 1
-
-# VAD
-VAD_MODE    = 2   # 0-3, higher = stricter
-
-# FSM
-START_SPEECH_FRAMES = 3      # 3 × 30ms = 90ms to start
-END_SILENCE_FRAMES  = 20     # 20 × 30ms = 600ms silence to end
-MIN_SEGMENT_SEC     = 1.5    # TitaNet needs ≥1.5s
+VAD_MODE    = 2   
+START_SPEECH_FRAMES = 3      
+END_SILENCE_FRAMES  = 20     
+MIN_SEGMENT_SEC     = 1.5    
 MAX_SEGMENT_SEC     = 7.0
-
-# Whisper
 WHISPER_MODEL   = "base.en"
 WHISPER_DEVICE  = "cpu"
 WHISPER_COMPUTE = "int8"
-
-# BERT
 BERT_MIN_TEXT_LEN = 3
-BERT_RISK_CAP     = 0.55   # ← cap: sentiment alone cannot fire CRITICAL
-
-# Speaker smoothing — rolling window size
-SPEAKER_WINDOW = 4   # last 4 segment results voted on
-
-# ============================================================
-# ENUMS & DATACLASSES
-# ============================================================
+BERT_RISK_CAP     = 0.55   
+SPEAKER_WINDOW = 4   
 
 class AlertLevel(enum.Enum):
     NONE     = "NONE"
@@ -125,11 +88,6 @@ class VehicleContext:
     eye_openness:    float = 1.0
     gaze_deviation:  float = 0.0
 
-
-# ============================================================
-# GLOBALS  (standalone CLI mode only)
-# ============================================================
-
 audio_q       = queue.Queue()
 running       = True
 chunk_counter = 0
@@ -139,11 +97,6 @@ def audio_callback(indata, frames, time_info, status):
     if status:
         print(f"[AUDIO STATUS] {status}")
     audio_q.put(indata.copy().reshape(-1))
-
-
-# ============================================================
-# HELPERS
-# ============================================================
 
 def rms(x: np.ndarray) -> float:
     return float(np.sqrt(np.mean(np.square(x))) + 1e-9)
@@ -197,9 +150,6 @@ def _filter_speech_frames(audio: np.ndarray, sr: int = SR,
     return np.concatenate(speech_frames)
 
 
-# ============================================================
-# SPEAKER SMOOTHER
-# ============================================================
 
 class SpeakerSmoother:
     """
@@ -226,10 +176,6 @@ class SpeakerSmoother:
     def reset(self):
         self._history.clear()
 
-
-# ============================================================
-# KEYWORD SPOTTER
-# ============================================================
 
 class KeywordSpotter:
     def __init__(self):
@@ -261,9 +207,6 @@ class KeywordSpotter:
         return best_kw, best_score
 
 
-# ============================================================
-# BERT TEXT CLASSIFIER
-# ============================================================
 
 class TextRiskClassifier:
     def __init__(self):
@@ -298,10 +241,6 @@ class TextRiskClassifier:
             return {"label": "ERROR", "score": 0.0, "risk": 0.0}
 
 
-# ============================================================
-# SPEECH FSM
-# ============================================================
-
 class SpeechFSM:
     def __init__(self):
         self.in_speech   = False
@@ -327,9 +266,6 @@ class SpeechFSM:
         return "idle"
 
 
-# ============================================================
-# ASR
-# ============================================================
 
 class ASR:
     def __init__(self):
@@ -356,9 +292,6 @@ class ASR:
         return text, latency_ms
 
 
-# ============================================================
-# FINAL RISK  (speaker-aware)
-# ============================================================
 
 def compute_final_risk(keyword_score: float,
                        bert_risk: float,
@@ -390,10 +323,6 @@ def compute_final_risk(keyword_score: float,
     return weighted, alert
 
 
-# ============================================================
-# ALERT OUTPUT
-# ============================================================
-
 class AlertOutput:
     """Dispatches PipelineResult to registered callbacks."""
     def dispatch(self, result: PipelineResult):
@@ -407,9 +336,6 @@ class AlertOutput:
             )
 
 
-# ============================================================
-# DMS PIPELINE
-# ============================================================
 
 class DMSPipeline:
     """
@@ -435,7 +361,6 @@ class DMSPipeline:
         self._speaker  = None
         self._smoother = SpeakerSmoother(SPEAKER_WINDOW)
 
-    # ── Public API ────────────────────────────────────────────
 
     def start(self):
         if self._running:
@@ -500,7 +425,6 @@ class DMSPipeline:
         info["available"] = True
         return info
 
-    # ── Internal loop ─────────────────────────────────────────
 
     def _run(self):
         print("[DMS] Loading sub-components…")
@@ -587,9 +511,6 @@ class DMSPipeline:
 
                 t_start = time.time()
 
-                # ── Speaker ID (runs ONCE on full segment) ────
-                # Running on the full segment gives TitaNet the audio it
-                # needs and avoids the per-chunk CPU spike.
                 if self._speaker is not None:
                     try:
                         raw_label, raw_score = self._speaker.identify(segment)
@@ -672,10 +593,6 @@ def stop_handler(sig, frame):
 signal.signal(signal.SIGINT,  stop_handler)
 signal.signal(signal.SIGTERM, stop_handler)
 
-
-# ============================================================
-# STANDALONE CLI MAIN
-# ============================================================
 
 def main():
     global running, chunk_counter

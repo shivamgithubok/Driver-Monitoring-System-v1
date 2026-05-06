@@ -16,7 +16,9 @@ from mqtt_integration import (
 from dotenv import load_dotenv
 load_dotenv()
 
-# Import our vision pipeline module
+from utils import get_logger
+logger = get_logger("app")
+
 import vision
 
 try:
@@ -26,7 +28,7 @@ try:
     AUDIO_AVAILABLE = True
 except ImportError as e:
     AUDIO_AVAILABLE = False
-    print(f"[WARN] dms_pipeline not found ({e}). Audio disabled.")
+    logger.warning(f"dms_pipeline not found ({e}). Audio disabled.")
 
 try:
     from face_verification import (
@@ -38,7 +40,7 @@ try:
     FACE_AVAILABLE = True
 except ImportError as e:
     FACE_AVAILABLE = False
-    print(f"[WARN] face_verification not found ({e}). Face ID disabled.")
+    logger.warning(f"face_verification not found ({e}). Face ID disabled.")
 
 app = Flask(__name__)
 
@@ -174,25 +176,31 @@ def mqtt_publish_worker():
                         uptime=get_uptime()
                     )
         except Exception as e:
-            print(f"[MQTT Worker] Error: {e}")
+            logger.error(f"[MQTT Worker] Error: {e}")
             
         time.sleep(0.2)
 
 
 def on_snapshot(payload):
     """Handle remote snapshot request"""
-    print(f"[CMD] Snapshot requested: {payload}")
+    logger.info(f"[CMD] Snapshot requested: {payload}")
     # You can save a snapshot to disk here
-    with vision.state_lock:
-        if vision.latest_frame_jpg:
+    try:
+        with vision.state_lock:
+            jpg = vision.latest_frame_jpg
+        if jpg:
             snapshot_path = f"snapshot_{int(time.time())}.jpg"
             with open(snapshot_path, "wb") as f:
-                f.write(vision.latest_frame_jpg)
-            print(f"[CMD] Snapshot saved to {snapshot_path}")
+                f.write(jpg)
+            logger.info(f"[CMD] Snapshot saved to {snapshot_path}")
+        else:
+            logger.warning("[CMD] Snapshot failed: No frame available")
+    except Exception as e:
+        logger.exception(f"Error saving snapshot: {e}")
 
 def on_reset_alerts(payload):
     """Handle reset alerts command"""
-    print(f"[CMD] Reset alerts: {payload}")
+    logger.info(f"[CMD] Reset alerts: {payload}")
     # Reset any persistent alert state
     with audio_lock:
         # Reset audio alert tracking if needed
@@ -200,14 +208,22 @@ def on_reset_alerts(payload):
 
 def on_set_threshold(task, threshold):
     """Handle threshold update command"""
-    print(f"[CMD] Set threshold: {task} = {threshold}")
-    # Update threshold in TASK_META if needed
-    if task in vision.TASK_META:
-        vision.TASK_META[task]["alert_threshold"] = float(threshold)
+    logger.info(f"[CMD] Set threshold: {task} = {threshold}")
+    try:
+        # Update threshold in TASK_META if needed
+        if task in vision.TASK_META:
+            vision.TASK_META[task]["alert_threshold"] = float(threshold)
+            logger.info(f"Threshold updated for {task} to {threshold}")
+        else:
+            logger.warning(f"Unknown task for threshold update: {task}")
+    except ValueError as e:
+        logger.error(f"Invalid threshold value '{threshold}' for task {task}: {e}")
+    except Exception as e:
+        logger.exception(f"Error setting threshold: {e}")
 
 def on_reboot(payload):
     """Handle reboot command"""
-    print(f"[CMD] Rebooting...")
+    logger.info("[CMD] Rebooting...")
     import sys
     sys.exit(0)
 
@@ -225,12 +241,12 @@ def start_audio_pipeline():
         audio_pipeline = DMSPipeline(mic_device=None)
         audio_pipeline.start()
         audio_ok = True
-        print("[OK] Audio pipeline started")
+        logger.info("Audio pipeline started")
         spk = audio_pipeline.get_speaker_status()
         if spk.get("enrolled"):
-            print(f"[OK] Driver voiceprint loaded")
+            logger.info(f"Driver voiceprint loaded")
     except Exception as e:
-        print(f"[WARN] Audio pipeline failed: {e}")
+        logger.warning(f"Audio pipeline failed: {e}")
         audio_ok = False
 
 def _get_face_model():
@@ -321,9 +337,12 @@ def audio_enrol():
         try:
             enrol_done = threading.Event()
             def _actual_enrol():
-                try: audio_pipeline.enrol_driver(seconds=seconds)
-                except: pass
-                finally: enrol_done.set()
+                try: 
+                    audio_pipeline.enrol_driver(seconds=seconds)
+                except Exception as e:
+                    logger.exception(f"Error in actual voice enrollment: {e}")
+                finally: 
+                    enrol_done.set()
             threading.Thread(target=_actual_enrol, daemon=True).start()
             elapsed = 0.0
             while not enrol_done.is_set() and elapsed < seconds + 3:
@@ -335,7 +354,8 @@ def audio_enrol():
                 time.sleep(0.3); elapsed += 0.3
             enrol_done.wait(timeout=5)
             with audio_lock: enrol_state.update(phase="done", progress=100, message="Complete ✓")
-        except:
+        except Exception as e:
+            logger.exception(f"Error in voice enrollment process: {e}")
             with audio_lock: enrol_state.update(phase="error", message="Failed")
     threading.Thread(target=_do_enrol, daemon=True).start()
     return jsonify({"ok": True, "msg": "Enrollment started"})
@@ -378,6 +398,7 @@ def face_enrol():
             save_preview(preview, f"enrolled_{driver_name}.jpg")
             with face_lock: face_enrol_state.update(phase="done", progress=100)
         except Exception as e:
+            logger.exception(f"Error in face enrollment: {e}")
             with face_lock: face_enrol_state.update(phase="error", message=str(e))
     threading.Thread(target=_do_face_enrol, daemon=True).start()
     return jsonify({"ok": True})
@@ -413,6 +434,8 @@ def face_verify_start():
                     sim, is_match = compare_embeddings(face.embedding, enrolled_emb, 0.45)
                     with face_lock: face_verify_state.update(active=True, match=is_match, similarity=round(sim,3))
                 time.sleep(0.5)
+        except Exception as e:
+            logger.exception(f"Error in face verification loop: {e}")
         finally:
             face_verify_running = False
             with face_lock: face_verify_state["active"] = False
@@ -474,7 +497,7 @@ if __name__ == "__main__":
     # Register shutdown handler
     atexit.register(shutdown_mqtt)
     
-    print("[OK] All systems ready")
-    print("[OK] Open http://localhost:5000")
+    logger.info("All systems ready")
+    logger.info("Open http://localhost:5000")
     
     app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)

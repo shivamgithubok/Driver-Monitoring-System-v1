@@ -19,3 +19,4 @@ voice
 *.pth
 *.pt
 libcusparse_lt-linux-aarch64-0.7.1.0-archive
+*.log

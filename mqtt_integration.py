@@ -7,6 +7,9 @@ import time
 from typing import Dict, Any, Optional
 
 from mqtt_manager import MQTTManager
+from utils import get_logger
+
+logger = get_logger("mqtt")
 
 # Global MQTT instance
 _mqtt_manager: Optional[MQTTManager] = None
@@ -46,14 +49,14 @@ def init_mqtt(broker_host: str = "localhost",
         
         if _mqtt_manager.connect():
             _mqtt_enabled = True
-            print(f"[MQTT] Enabled - connected to {broker_host}:{broker_port}")
+            logger.info(f"Enabled - connected to {broker_host}:{broker_port}")
             return True
         else:
-            print(f"[MQTT] Failed to connect to {broker_host}:{broker_port}")
+            logger.error(f"Failed to connect to {broker_host}:{broker_port}")
             return False
             
     except Exception as e:
-        print(f"[MQTT] Init failed: {e}")
+        logger.error(f"Init failed: {e}")
         _mqtt_enabled = False
         return False
 
@@ -68,7 +71,7 @@ def shutdown_mqtt():
     if _mqtt_manager:
         _mqtt_manager.disconnect()
     _mqtt_enabled = False
-    print("[MQTT] Shutdown complete")
+    logger.info("Shutdown complete")
 
 
 # ==================== Command Handlers ====================
@@ -91,7 +94,7 @@ def set_callbacks(snapshot_cb=None, reset_alerts_cb=None,
 
 def _handle_snapshot_command(payload: Dict):
     """Handle remote snapshot request"""
-    print(f"[MQTT] Received snapshot command")
+    logger.info("Received snapshot command")
     if _snapshot_callback:
         _snapshot_callback(payload)
         _mqtt_manager.publish_command_response("snapshot", True)
@@ -101,7 +104,7 @@ def _handle_snapshot_command(payload: Dict):
 
 def _handle_reset_alerts_command(payload: Dict):
     """Handle reset alerts command"""
-    print(f"[MQTT] Received reset_alerts command")
+    logger.info("Received reset_alerts command")
     if _reset_alerts_callback:
         _reset_alerts_callback(payload)
         _mqtt_manager.publish_command_response("reset_alerts", True)
@@ -113,7 +116,7 @@ def _handle_set_threshold_command(payload: Dict):
     """Handle set threshold command"""
     threshold = payload.get("threshold")
     task = payload.get("task", "drowsiness")
-    print(f"[MQTT] Received set_threshold: {task}={threshold}")
+    logger.info(f"Received set_threshold: {task}={threshold}")
     if _threshold_callback:
         _threshold_callback(task, threshold)
         _mqtt_manager.publish_command_response("set_threshold", True)
@@ -123,7 +126,7 @@ def _handle_set_threshold_command(payload: Dict):
 
 def _handle_reboot_command(payload: Dict):
     """Handle reboot command"""
-    print(f"[MQTT] Received reboot command")
+    logger.info("Received reboot command")
     if _reboot_callback:
         _reboot_callback(payload)
         _mqtt_manager.publish_command_response("reboot", True)

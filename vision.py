@@ -3,6 +3,9 @@ import time
 import threading
 import numpy as np
 from collections import deque
+from utils import get_logger
+
+logger = get_logger("vision")
 
 try:
     import onnxruntime as ort
@@ -12,117 +15,17 @@ except ImportError:
 
 import mediapipe as mp
 
-# ─────────────────────────────────────────────────────────────────────────────
-# CONFIG
-# ─────────────────────────────────────────────────────────────────────────────
-MODEL_PATH   = "edge_driver_model_distilled.onnx"
-IMG_SIZE     = 224
-CAMERA_INDEX = 0
-STREAM_FPS   = 25
-JPEG_QUALITY = 80
-
-MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-STD  = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+from config import (
+    CAMERA_INDEX, STREAM_FPS, JPEG_QUALITY, IMG_SIZE, MEAN, STD, FACE_MARGIN,
+    VISION_MODEL_PATH as MODEL_PATH,
+    TASK_META, TASK_ORDER, ONNX_OUTPUT_ORDER
+)
 
 # ── MediaPipe face detection for face cropping ──
 _mp_face    = mp.solutions.face_detection
 _face_det   = _mp_face.FaceDetection(model_selection=0,
                                       min_detection_confidence=0.5)
-FACE_MARGIN = 0.20
 
-# ─────────────────────────────────────────────────────────────────────────────
-# LABEL MAPS
-# ─────────────────────────────────────────────────────────────────────────────
-TASK_META = {
-    "drowsiness": {
-        "label": "Drowsiness", "icon": "😴",
-        "classes": {0: "Alert", 1: "Drowsy"},
-        "alert_class": 1, "alert_threshold": 0.65,
-        "color": {"Alert": "#00e5a0", "Drowsy": "#ff4444"},
-    },
-    "eye_state": {
-        "label": "Eye State", "icon": "👀",
-        "classes": {0: "Open", 1: "Closed"},
-        "alert_class": 1, "alert_threshold": 0.80,
-        "color": {"Open": "#00e5a0", "Closed": "#ff4444"},
-    },
-    "yawn": {
-        "label": "Yawn Detection", "icon": "🥱",
-        "classes": {0: "No Yawn", 1: "Yawning"},
-        "alert_class": 1, "alert_threshold": 0.70,
-        "color": {"No Yawn": "#00e5a0", "Yawning": "#ffaa00"},
-    },
-    "gaze": {
-        "label": "Gaze Direction", "icon": "👁",
-        "classes": {
-            0: "Bottom-Left",  1: "Middle-Left",  2: "Top-Left",
-            3: "Bottom-Right", 4: "Middle-Right", 5: "Top-Right",
-            6: "Top-Center",   7: "Bottom-Center",
-        },
-        "alert_class": None, "color": {},
-    },
-    "emotion": {
-        "label": "Emotion", "icon": "🎭",
-        "classes": {
-            0: "Angry", 1: "Disgust", 2: "Fear",
-            3: "Happy", 4: "Sad",    5: "Surprise", 6: "Neutral",
-        },
-        "alert_class": None,
-        "color": {
-            "Angry": "#ff4444", "Disgust": "#cc44ff",
-            "Fear":  "#ff8800", "Happy":   "#00e5a0",
-            "Sad":   "#4488ff", "Surprise":"#ffdd00",
-            "Neutral":"#aaaaaa",
-        },
-    },
-    "distraction": {
-        "label": "Distraction", "icon": "🚨",
-        "classes": {0: "Safe", 1: "Distracted"},
-        "alert_class": 1, "alert_threshold": 0.60,
-        "color": {"Safe": "#00e5a0", "Distracted": "#ff4444"},
-    },
-    "activity": {
-        "label": "Activity", "icon": "🚗",
-        "classes": {
-            0: "Phone Use",  1: "Drinking",
-            2: "Cigarette",  3: "Seatbelt",
-            4: "None",
-        },
-        "alert_class": None,
-        "color": {
-            "Phone Use":  "#ff4444",
-            "Drinking":   "#ff8800",
-            "Cigarette":  "#cc44ff",
-            "Seatbelt":   "#00e5a0",
-            "None":       "#00e5a0",
-        },
-    },
-    "age": {
-        "label": "Age Group", "icon": "🪪",
-        "classes": {0: "Minor", 1: "Young Adult", 2: "Adult"},
-        "alert_class": 0, "alert_threshold": 0.55,
-        "color": {
-            "Minor":       "#ff4444",
-            "Young Adult": "#ffaa00",
-            "Adult":       "#00e5a0",
-        },
-    },
-}
-
-TASK_ORDER = [
-    "drowsiness", "eye_state", "yawn",
-    "distraction", "activity",
-    "gaze", "emotion", "age",
-]
-
-ONNX_OUTPUT_ORDER = [
-    "drowsiness", "gaze", "yawn", "emotion",
-    "eye_state", "distraction", "activity", "age",
-]
-
-# ─────────────────────────────────────────────────────────────────────────────
-# SHARED STATE (Vision)
-# ─────────────────────────────────────────────────────────────────────────────
 state_lock         = threading.Lock()
 latest_frame_jpg   = None
 latest_predictions = {}
@@ -145,9 +48,6 @@ def init_audio_bridge(lock, result, pipeline, ok_flag):
     _audio_pipeline = pipeline
     _audio_ok = ok_flag
 
-# ─────────────────────────────────────────────────────────────────────────────
-# ONNX SESSION
-# ─────────────────────────────────────────────────────────────────────────────
 session = None
 
 def load_model():
@@ -163,23 +63,20 @@ def load_model():
             sess_options=opts,
             providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
         )
-        print(f"[OK] Vision model loaded: {MODEL_PATH}")
-        print(f"     Provider: {session.get_providers()[0]}")
+        logger.info(f"Vision model loaded: {MODEL_PATH}")
+        logger.info(f"     Provider: {session.get_providers()[0]}")
 
         # Verify output count
         outputs = session.get_outputs()
         n_out = len(outputs)
-        print(f"     Outputs: {n_out}  (expected {len(ONNX_OUTPUT_ORDER)})")
+        logger.info(f"     Outputs: {n_out}  (expected {len(ONNX_OUTPUT_ORDER)})")
         for i, out in enumerate(outputs):
-            print(f"       [{i}] {out.name}")
+            logger.info(f"       [{i}] {out.name}")
 
     except Exception as e:
-        print(f"[WARN] Vision model not loaded ({e}). Demo mode.")
+        logger.warning(f"Vision model not loaded ({e}). Demo mode.")
         session = None
 
-# ─────────────────────────────────────────────────────────────────────────────
-# FACE CROP + PREPROCESSING
-# ─────────────────────────────────────────────────────────────────────────────
 def _crop_face(frame_bgr):
     h, w = frame_bgr.shape[:2]
     rgb  = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
@@ -212,9 +109,6 @@ def softmax(x: np.ndarray) -> np.ndarray:
     e = np.exp(x - x.max())
     return e / e.sum()
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PREDICTIONS + SMOOTHING
-# ─────────────────────────────────────────────────────────────────────────────
 _demo_t = 0.0
 def demo_predictions() -> dict:
     global _demo_t
@@ -251,9 +145,6 @@ def smooth_predictions(raw: dict) -> dict:
         }
     return smoothed
 
-# ─────────────────────────────────────────────────────────────────────────────
-# OVERLAY
-# ─────────────────────────────────────────────────────────────────────────────
 def _draw_overlay(frame: np.ndarray, preds: dict, face_bbox=None) -> np.ndarray:
     h, w = frame.shape[:2]
 
@@ -320,9 +211,6 @@ def _blank_frame() -> np.ndarray:
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (80, 80, 80), 2)
     return f
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PIPELINE THREAD
-# ─────────────────────────────────────────────────────────────────────────────
 def camera_thread():
     global latest_frame_jpg, latest_predictions, latest_fps, camera_ok, latest_raw_frame
 
@@ -333,7 +221,7 @@ def camera_thread():
     cap.set(cv2.CAP_PROP_BUFFERSIZE,   1)
 
     camera_ok = cap.isOpened()
-    if not camera_ok: print("[WARN] Camera not found. Demo mode.")
+    if not camera_ok: logger.warning("Camera not found. Demo mode.")
 
     frame_times = deque(maxlen=30)
 
@@ -369,7 +257,7 @@ def camera_thread():
                     }
                 preds = smooth_predictions(raw)
             except Exception as e:
-                print(f"[ERR] Vision inference: {e}")
+                logger.error(f"Vision inference: {e}")
                 preds = demo_predictions()
                 face_bbox = None
         else:

@@ -4,14 +4,16 @@ import tempfile
 import soundfile as sf
 
 import nemo.collections.asr as nemo_asr
+from utils import get_logger
 
-# ── Config ─────────────────────────────────────────
-SR = 16000
-EMBED_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "driver_embedding.npy")
+logger = get_logger("speaker")
 
-HIGH_THRESHOLD = 0.45   # confident match
-LOW_THRESHOLD  = 0.30   # uncertain zone
+from config import (
+    AUDIO_SR as SR,
+    SPEAKER_EMBED_PATH as EMBED_PATH,
+    SPEAKER_HIGH_THRESHOLD as HIGH_THRESHOLD,
+    SPEAKER_LOW_THRESHOLD as LOW_THRESHOLD
+)
 
 
 class SpeakerVerifier:
@@ -20,19 +22,23 @@ class SpeakerVerifier:
     def __init__(self, embed_path: str = EMBED_PATH):
         self.embed_path = embed_path
 
-        print("[SPEAKER] Loading TitaNet model...")
+        logger.info("Loading TitaNet model...")
         self.model = nemo_asr.models.EncDecSpeakerLabelModel.from_pretrained(
             model_name="titanet_large"
         )
-        print("[SPEAKER] TitaNet ready ✓")
+        logger.info("TitaNet ready ✓")
 
         self.driver_embed = None
 
         if os.path.isfile(self.embed_path):
-            self.driver_embed = np.load(self.embed_path)
-            print(f"[SPEAKER] Driver embedding loaded from {self.embed_path}")
+            try:
+                self.driver_embed = np.load(self.embed_path)
+                logger.info(f"Driver embedding loaded from {self.embed_path}")
+            except Exception as e:
+                logger.error(f"Failed to load driver embedding from {self.embed_path}: {e}")
+                self.driver_embed = None
         else:
-            print("[SPEAKER] No driver embedding found — enroll first")
+            logger.warning("No driver embedding found — enroll first")
 
     # ───────────────────────────────────────────────
     def _audio_to_embedding(self, audio: np.ndarray):
@@ -47,11 +53,16 @@ class SpeakerVerifier:
 
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
             temp_path = f.name
+            
+        try:
             sf.write(temp_path, audio, SR)
-
-        emb = self.model.get_embedding(temp_path)
-
-        os.remove(temp_path)
+            emb = self.model.get_embedding(temp_path)
+        finally:
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except Exception as e:
+                    logger.error(f"Failed to remove temp file {temp_path}: {e}")
 
         # handle torch tensor / numpy safely
         if hasattr(emb, "detach"):
@@ -64,12 +75,14 @@ class SpeakerVerifier:
         """
         Enroll driver voice
         """
-        embed = self._audio_to_embedding(audio)
-
-        np.save(self.embed_path, embed)
-        self.driver_embed = embed
-
-        print(f"[SPEAKER] Driver enrolled → {self.embed_path}")
+        try:
+            embed = self._audio_to_embedding(audio)
+            np.save(self.embed_path, embed)
+            self.driver_embed = embed
+            logger.info(f"Driver enrolled → {self.embed_path}")
+        except Exception as e:
+            logger.exception(f"Failed to enroll driver voice: {e}")
+            raise
 
     # ───────────────────────────────────────────────
     def identify(self, audio: np.ndarray):
@@ -79,26 +92,30 @@ class SpeakerVerifier:
         if self.driver_embed is None:
             return ("UNKNOWN", 0.0)
 
-        embed = self._audio_to_embedding(audio)
+        try:
+            embed = self._audio_to_embedding(audio)
 
-        # cosine similarity
-        score = float(
-            np.dot(self.driver_embed, embed) /
-            (np.linalg.norm(self.driver_embed) *
-             np.linalg.norm(embed) + 1e-9)
-        )
+            # cosine similarity
+            score = float(
+                np.dot(self.driver_embed, embed) /
+                (np.linalg.norm(self.driver_embed) *
+                 np.linalg.norm(embed) + 1e-9)
+            )
 
-        # decision logic
-        if score >= HIGH_THRESHOLD:
-            label = "DRIVER"
-        elif score >= LOW_THRESHOLD:
-            label = "UNCERTAIN"
-        else:
-            label = "NOT_DRIVER"
+            # decision logic
+            if score >= HIGH_THRESHOLD:
+                label = "DRIVER"
+            elif score >= LOW_THRESHOLD:
+                label = "UNCERTAIN"
+            else:
+                label = "NOT_DRIVER"
 
-        print(f"[SPEAKER DEBUG] score={score:.4f} → {label}")
+            logger.debug(f"score={score:.4f} → {label}")
 
-        return (label, round(score, 3))
+            return (label, round(score, 3))
+        except Exception as e:
+            logger.error(f"Error identifying speaker: {e}")
+            return ("UNKNOWN", 0.0)
 
     # ───────────────────────────────────────────────
     def status(self):
