@@ -1,1743 +1,546 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DMS — Driver Monitoring System</title>
+  <title>DMS — Premium Monitoring</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&display=swap"
-    rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    /* ── Design: Dark industrial HUD — automotive cockpit aesthetic ── */
     :root {
-      --bg: #080c10;
-      --surface: #0d1117;
-      --surface2: #141b24;
-      --border: #1e2d3d;
-      --accent: #00e5a0;
-      --accent2: #0af;
-      --warn: #ffaa00;
-      --danger: #ff4444;
-      --text: #c8d8e8;
-      --text-dim: #4a6070;
-      --mono: 'Share Tech Mono', monospace;
-      --sans: 'Syne', sans-serif;
-      --radius: 6px;
-      --glow: 0 0 18px rgba(0, 229, 160, 0.18);
+      --bg: #f4f7fa;
+      --surface: #ffffff;
+      --surface-dim: #f8fafc;
+      --border: #e2e8f0;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --accent: #3b82f6;
+      --accent-light: rgba(59, 130, 246, 0.1);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --radius: 16px;
     }
-
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    html,
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--sans);
-      overflow: hidden;
-    }
-
-    /* ── Scanline texture ── */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      pointer-events: none;
-      background: repeating-linear-gradient(0deg,
-          rgba(0, 0, 0, 0.06) 0px,
-          rgba(0, 0, 0, 0.06) 1px,
-          transparent 1px,
-          transparent 3px);
-    }
-
-    /* ── Grid layout ── */
-    .shell {
-      display: grid;
-      grid-template-rows: 52px 1fr;
-      grid-template-columns: 1fr 360px;
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-primary);
       height: 100vh;
-      gap: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
-
-    /* ─────────── HEADER ─────────── */
+    /* Layout Structure */
     header {
-      grid-column: 1 / -1;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      position: relative;
-    }
-
-    header::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent), transparent);
-      opacity: 0.5;
-    }
-
-    .logo {
+      padding: 16px 32px;
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 12px;
+      flex-shrink: 0;
+      z-index: 10;
     }
-
-    .logo-icon {
-      width: 28px;
-      height: 28px;
-      border: 2px solid var(--accent);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      animation: pulse-ring 2s ease-in-out infinite;
+    .header-profile { display: flex; align-items: center; gap: 16px; }
+    .driver-avatar {
+      width: 48px; height: 48px; border-radius: 50%; background: #e2e8f0;
+      display: flex; align-items: center; justify-content: center; font-size: 24px;
     }
-
-    .logo-icon span {
-      font-size: 13px;
-    }
-
-    @keyframes pulse-ring {
-
-      0%,
-      100% {
-        box-shadow: 0 0 0 0 rgba(0, 229, 160, 0.4);
-      }
-
-      50% {
-        box-shadow: 0 0 0 6px rgba(0, 229, 160, 0);
-      }
-    }
-
-    .logo-text {
-      font-size: 13px;
-      font-weight: 800;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: var(--accent);
-    }
-
-    .logo-sub {
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--text-dim);
-      letter-spacing: 2px;
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
+    .driver-details h1 { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+    .driver-details p { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    
+    .header-stats { display: flex; gap: 16px; align-items: center; }
     .status-pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text-dim);
-      padding: 4px 10px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
+      background: var(--surface-dim); border: 1px solid var(--border);
+      padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      display: flex; align-items: center; gap: 8px; color: var(--text-secondary);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; }
+    .dot.live { background: var(--success); box-shadow: 0 0 8px var(--success); animation: pulse 2s infinite; }
+    .dot.dead { background: var(--danger); }
+    .dot.warn { background: var(--warning); }
+    
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
+    .main-container {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 24px;
+      padding: 24px;
+      flex-grow: 1;
+      overflow: hidden;
     }
 
-    .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--text-dim);
-    }
-
-    .dot.live {
-      background: var(--accent);
-      animation: blink 1.2s step-start infinite;
-    }
-
-    .dot.warn {
-      background: var(--warn);
-    }
-
-    .dot.dead {
-      background: var(--danger);
-    }
-
-    @keyframes blink {
-      50% {
-        opacity: 0;
-      }
-    }
-
-    #fps-badge {
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--accent2);
-      letter-spacing: 1px;
-    }
-
-    /* ─────────── VIDEO PANEL ─────────── */
+    /* Left Pane: Video and Behavior Area */
+    .pane-left { display: flex; flex-direction: column; gap: 24px; overflow-y: auto; }
+    
     .video-panel {
-      background: #000;
       position: relative;
+      background: #000;
+      border-radius: var(--radius);
       overflow: hidden;
-      border-right: 1px solid var(--border);
-    }
-
-    #video-stream {
+      box-shadow: var(--shadow-lg);
+      aspect-ratio: 16/9;
       width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    /* Corner brackets */
-    .bracket {
-      position: absolute;
-      width: 24px;
-      height: 24px;
-      z-index: 10;
-    }
-
-    .bracket--tl {
-      top: 12px;
-      left: 12px;
-      border-top: 2px solid var(--accent);
-      border-left: 2px solid var(--accent);
-    }
-
-    .bracket--tr {
-      top: 12px;
-      right: 12px;
-      border-top: 2px solid var(--accent);
-      border-right: 2px solid var(--accent);
-    }
-
-    .bracket--bl {
-      bottom: 12px;
-      left: 12px;
-      border-bottom: 2px solid var(--accent);
-      border-left: 2px solid var(--accent);
-    }
-
-    .bracket--br {
-      bottom: 12px;
-      right: 12px;
-      border-bottom: 2px solid var(--accent);
-      border-right: 2px solid var(--accent);
-    }
-
-    /* Alert banner */
-    #alert-banner {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 12px 20px;
-      font-family: var(--mono);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-align: center;
-      text-transform: uppercase;
-      display: none;
-      z-index: 20;
-      animation: flash-bg 0.6s step-start infinite;
-    }
-
-    #alert-banner.active {
-      display: block;
-    }
-
-    @keyframes flash-bg {
-
-      0%,
-      100% {
-        background: rgba(255, 68, 68, 0.9);
-        color: #fff;
-      }
-
-      50% {
-        background: rgba(200, 0, 0, 0.95);
-        color: #ffaaaa;
-      }
-    }
-
-    /* Demo mode tag */
-    #demo-tag {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      background: rgba(255, 170, 0, 0.15);
-      border: 1px solid var(--warn);
-      color: var(--warn);
-      font-family: var(--mono);
-      font-size: 10px;
-      padding: 3px 8px;
-      border-radius: 3px;
-      letter-spacing: 1px;
-      display: none;
-      z-index: 10;
-    }
-
-    /* ─────────── SIDEBAR ─────────── */
-    .sidebar {
-      background: var(--surface);
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: var(--border) transparent;
-    }
-
-    .sidebar::-webkit-scrollbar {
-      width: 4px;
-    }
-
-    .sidebar::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .sidebar::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 2px;
-    }
-
-    .sidebar-header {
-      padding: 14px 16px 10px;
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--text-dim);
-      letter-spacing: 2px;
-      border-bottom: 1px solid var(--border);
-      text-transform: uppercase;
-    }
-
-    /* ─────────── TASK CARD ─────────── */
-    .task-card {
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border);
-      transition: background 0.2s;
-    }
-
-    .task-card:hover {
-      background: var(--surface2);
-    }
-
-    .task-card.alerting {
-      background: rgba(255, 68, 68, 0.06);
-    }
-
-    .task-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-
-    .task-name {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .task-icon {
-      font-size: 15px;
-      line-height: 1;
-    }
-
-    .task-label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: var(--text-dim);
-    }
-
-    .task-pred {
-      font-family: var(--mono);
-      font-size: 13px;
-      font-weight: 400;
-      color: var(--accent);
-      transition: color 0.3s;
-      text-align: right;
-    }
-
-    .task-pred.alerting {
-      color: var(--danger);
-    }
-
-    .task-pred.warning {
-      color: var(--warn);
-    }
-
-    .task-conf {
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--text-dim);
-      text-align: right;
-    }
-
-    /* Confidence bar */
-    .conf-bar-wrap {
-      height: 3px;
-      background: var(--border);
-      border-radius: 2px;
-      margin-bottom: 10px;
-      overflow: hidden;
-    }
-
-    .conf-bar {
-      height: 100%;
-      border-radius: 2px;
-      background: var(--accent);
-      transition: width 0.25s ease, background 0.3s;
-    }
-
-    .conf-bar.alerting {
-      background: var(--danger);
-    }
-
-    .conf-bar.warning {
-      background: var(--warn);
-    }
-
-    /* Class probability bars */
-    .class-bars {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .class-row {
-      display: grid;
-      grid-template-columns: 90px 1fr 38px;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .class-name {
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--text-dim);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .class-name.active {
-      color: var(--text);
-    }
-
-    .class-bar-wrap {
-      height: 5px;
-      background: var(--border);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-
-    .class-bar {
-      height: 100%;
-      border-radius: 3px;
-      background: var(--surface2);
-      transition: width 0.25s ease, background 0.3s;
-    }
-
-    .class-bar.active {
-      background: var(--accent);
-    }
-
-    .class-pct {
-      font-family: var(--mono);
-      font-size: 9px;
-      color: var(--text-dim);
-      text-align: right;
-    }
-
-    .class-pct.active {
-      color: var(--accent);
-    }
-
-    /* ─────────── GAZE RADAR ─────────── */
-    .gaze-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 1fr);
-      gap: 4px;
-      margin-top: 8px;
-      height: 100px;
-    }
-
-    .gaze-cell {
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--mono);
-      font-size: 8px;
-      color: var(--text-dim);
-      text-align: center;
-      line-height: 1.2;
-      transition: background 0.25s, border-color 0.25s, color 0.25s;
-      padding: 2px;
-    }
-
-    .gaze-cell.active {
-      background: rgba(0, 229, 160, 0.15);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .gaze-center {
-      grid-column: 2;
-      grid-row: 2;
-    }
-
-    /* ─────────── BOTTOM STATS ─────────── */
-    .stats-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1px;
-      margin-top: auto;
-      border-top: 1px solid var(--border);
-    }
-
-    .stat-cell {
-      padding: 12px 16px;
-      background: var(--surface2);
-    }
-
-    .stat-cell:first-child {
-      border-right: 1px solid var(--border);
-    }
-
-    .stat-label {
-      font-family: var(--mono);
-      font-size: 9px;
-      color: var(--text-dim);
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-
-    .stat-val {
-      font-family: var(--mono);
-      font-size: 18px;
-      color: var(--accent2);
-    }
-
-    /* ─────────── ALERT HISTORY ─────────── */
-    .alert-log {
-      padding: 10px 16px;
-      border-top: 1px solid var(--border);
       flex-shrink: 0;
     }
-
-    .alert-log-title {
-      font-family: var(--mono);
-      font-size: 9px;
-      color: var(--text-dim);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-
-    .alert-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      max-height: 90px;
-      overflow-y: auto;
-      scrollbar-width: none;
-    }
-
-    .alert-item {
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--warn);
-      padding: 3px 6px;
-      background: rgba(255, 170, 0, 0.06);
-      border-left: 2px solid var(--warn);
-      border-radius: 2px;
-      animation: slide-in 0.3s ease;
-    }
-
-    .alert-item.danger {
-      color: var(--danger);
-      background: rgba(255, 68, 68, 0.06);
-      border-color: var(--danger);
-    }
-
-    @keyframes slide-in {
-      from {
-        opacity: 0;
-        transform: translateX(-8px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    /* ─────────── VOICE ANALYSIS PANEL ─────────── */
-    .voice-panel {
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .voice-panel-title {
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--text-dim);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .voice-panel-title .voice-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--text-dim);
-      transition: background 0.3s;
-    }
-
-    .voice-panel-title .voice-dot.active {
-      background: var(--accent);
-      box-shadow: 0 0 6px var(--accent);
-    }
-
-    .voice-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 5px 0;
-    }
-
-    .voice-label {
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--text-dim);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .voice-val {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--accent2);
-      text-align: right;
-      max-width: 180px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .voice-transcript-box {
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--accent2);
-      min-height: 2.8em;
-      padding: 8px;
-      background: rgba(0, 170, 255, 0.05);
-      border-radius: 4px;
-      border: 1px solid rgba(0, 170, 255, 0.1);
-      line-height: 1.4;
-      margin-bottom: 10px;
-      transition: color 0.3s, border-color 0.3s;
-    }
-
-    .alert-badge {
-      display: inline-block;
-      font-family: var(--mono);
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      padding: 2px 8px;
-      border-radius: 3px;
-      text-transform: uppercase;
-    }
-
-    .alert-badge.none {
-      background: rgba(100, 100, 100, 0.2);
-      color: var(--text-dim);
-    }
-
-    .alert-badge.caution {
-      background: rgba(255, 170, 0, 0.15);
-      color: var(--warn);
-      border: 1px solid rgba(255, 170, 0, 0.3);
-    }
-
-    .alert-badge.warning {
-      background: rgba(255, 170, 0, 0.2);
-      color: #ffcc00;
-      border: 1px solid rgba(255, 204, 0, 0.4);
-    }
-
-    .alert-badge.alert {
-      background: rgba(255, 68, 68, 0.15);
-      color: var(--danger);
-      border: 1px solid rgba(255, 68, 68, 0.3);
-    }
-
-    .alert-badge.critical {
-      background: rgba(255, 0, 0, 0.2);
-      color: #ff2222;
-      border: 1px solid rgba(255, 0, 0, 0.4);
-      animation: flash-badge 0.8s step-start infinite;
-    }
-
-    @keyframes flash-badge {
-      50% {
-        opacity: 0.5;
-      }
-    }
-
-    .risk-bar-wrap {
-      height: 4px;
-      background: var(--border);
-      border-radius: 2px;
-      overflow: hidden;
-      margin-top: 4px;
-    }
-
-    .risk-bar {
-      height: 100%;
-      border-radius: 2px;
-      background: var(--accent);
-      transition: width 0.4s ease, background 0.3s;
-    }
-
-    .risk-bar.warn {
-      background: var(--warn);
-    }
-
-    .risk-bar.danger {
-      background: var(--danger);
-    }
-
-    .risk-bar.critical {
-      background: #ff0000;
-    }
-
-    /* ─────────── CONNECTION OVERLAY ─────────── */
-    #conn-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 100;
-      background: var(--bg);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      transition: opacity 0.5s;
-    }
-
-    #conn-overlay.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .spinner {
-      width: 48px;
-      height: 48px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    #conn-overlay p {
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--text-dim);
-      letter-spacing: 2px;
-    }
-
-    /* ─────────── ENROLLMENT MODAL ─────────── */
-    .enrol-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 200;
-      background: rgba(4, 6, 10, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.35s ease;
-    }
-
-    .enrol-overlay.visible {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .enrol-card {
-      width: 420px;
-      max-width: 92vw;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      box-shadow: 0 0 40px rgba(0, 229, 160, 0.08), 0 24px 80px rgba(0, 0, 0, 0.6);
-      overflow: hidden;
-      transform: translateY(20px) scale(0.97);
-      transition: transform 0.35s ease;
-    }
-
-    .enrol-overlay.visible .enrol-card {
-      transform: translateY(0) scale(1);
-    }
-
-    .enrol-card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px 24px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .enrol-card-header h2 {
-      font-family: var(--sans);
-      font-size: 16px;
-      font-weight: 800;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: var(--accent);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .enrol-close {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-
-    .enrol-close:hover {
-      background: rgba(255, 68, 68, 0.1);
-      border-color: var(--danger);
-      color: var(--danger);
-    }
-
-    /* Steps indicator */
-    .enrol-steps {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
-      padding: 20px 24px 8px;
-    }
-
-    .enrol-step-dot {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      border: 2px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--mono);
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-dim);
-      transition: all 0.3s;
-      position: relative;
-      z-index: 1;
-    }
-
-    .enrol-step-dot.active {
-      border-color: var(--accent);
-      color: var(--accent);
-      box-shadow: 0 0 12px rgba(0, 229, 160, 0.3);
-    }
-
-    .enrol-step-dot.done {
-      border-color: var(--accent);
-      background: var(--accent);
-      color: var(--bg);
-    }
-
-    .enrol-step-line {
-      width: 60px;
-      height: 2px;
-      background: var(--border);
-      transition: background 0.3s;
-    }
-
-    .enrol-step-line.done {
-      background: var(--accent);
-    }
-
-    .enrol-step-labels {
-      display: flex;
-      justify-content: space-between;
-      padding: 6px 40px 0;
-    }
-
-    .enrol-step-lbl {
-      font-family: var(--mono);
-      font-size: 8px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      text-align: center;
-      width: 60px;
-    }
-
-    .enrol-step-lbl.active {
-      color: var(--accent);
-    }
-
-    /* Step content */
-    .enrol-body {
-      padding: 24px;
-      min-height: 220px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .enrol-step-content {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      width: 100%;
-      animation: fadeUp 0.35s ease;
-    }
-
-    .enrol-step-content.active {
-      display: flex;
-    }
-
-    @keyframes fadeUp {
-      from {
-        opacity: 0;
-        transform: translateY(12px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Step 1 — Identity */
-    .enrol-input-group {
-      width: 100%;
-    }
-
-    .enrol-input-group label {
-      font-family: var(--mono);
-      font-size: 10px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      display: block;
-      margin-bottom: 8px;
-    }
-
-    .enrol-input {
-      width: 100%;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 16px;
-      font-family: var(--sans);
-      font-size: 14px;
-      color: var(--text);
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .enrol-input:focus {
-      border-color: var(--accent);
-    }
-
-    .enrol-input::placeholder {
-      color: var(--text-dim);
-    }
-
-    .enrol-btn-primary {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 10px;
-      background: linear-gradient(135deg, var(--accent), #00c896);
-      color: var(--bg);
-      font-family: var(--sans);
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: all 0.25s;
-    }
-
-    .enrol-btn-primary:hover {
-      box-shadow: 0 0 20px rgba(0, 229, 160, 0.3);
-      transform: translateY(-1px);
-    }
-
-    .enrol-btn-primary:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
-
-    /* Step 2 — Recording */
-    .enrol-progress-ring-wrap {
-      position: relative;
-      width: 120px;
-      height: 120px;
-    }
-
-    .enrol-progress-ring-wrap svg {
-      transform: rotate(-90deg);
-    }
-
-    .enrol-ring-bg {
-      fill: none;
-      stroke: var(--border);
-      stroke-width: 4;
-    }
-
-    .enrol-ring-fg {
-      fill: none;
-      stroke: var(--accent);
-      stroke-width: 4;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 0.35s ease;
-    }
-
-    .enrol-ring-text {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .enrol-ring-pct {
-      font-family: var(--mono);
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--accent);
-    }
-
-    .enrol-ring-label {
-      font-family: var(--mono);
-      font-size: 9px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      margin-top: 2px;
-    }
-
-    /* Waveform animation */
-    .enrol-waveform {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      height: 32px;
-    }
-
-    .enrol-wave-bar {
-      width: 4px;
-      background: var(--accent);
-      border-radius: 2px;
-      animation: waveAnim 0.8s ease-in-out infinite;
-    }
-
-    .enrol-wave-bar:nth-child(1) {
-      animation-delay: 0.0s;
-      height: 12px;
-    }
-
-    .enrol-wave-bar:nth-child(2) {
-      animation-delay: 0.1s;
-      height: 20px;
-    }
-
-    .enrol-wave-bar:nth-child(3) {
-      animation-delay: 0.2s;
-      height: 28px;
-    }
-
-    .enrol-wave-bar:nth-child(4) {
-      animation-delay: 0.3s;
-      height: 20px;
-    }
-
-    .enrol-wave-bar:nth-child(5) {
-      animation-delay: 0.15s;
-      height: 32px;
-    }
-
-    .enrol-wave-bar:nth-child(6) {
-      animation-delay: 0.25s;
-      height: 16px;
-    }
-
-    .enrol-wave-bar:nth-child(7) {
-      animation-delay: 0.35s;
-      height: 24px;
-    }
-
-    @keyframes waveAnim {
-
-      0%,
-      100% {
-        transform: scaleY(0.4);
-        opacity: 0.5;
-      }
-
-      50% {
-        transform: scaleY(1);
-        opacity: 1;
-      }
-    }
-
-    .enrol-msg {
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--text-dim);
-      letter-spacing: 1px;
-      text-align: center;
-    }
-
-    /* Step 3 — Result */
-    .enrol-result-icon {
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 32px;
-      animation: popIn 0.4s ease;
-    }
-
-    .enrol-result-icon.success {
-      background: rgba(0, 229, 160, 0.12);
-      border: 2px solid var(--accent);
-    }
-
-    .enrol-result-icon.error {
-      background: rgba(255, 68, 68, 0.12);
-      border: 2px solid var(--danger);
-    }
-
-    @keyframes popIn {
-      from {
-        transform: scale(0.5);
-        opacity: 0;
-      }
-
-      to {
-        transform: scale(1);
-        opacity: 1;
-      }
-    }
-
-    .enrol-result-title {
-      font-family: var(--sans);
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .enrol-result-msg {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text-dim);
-      text-align: center;
-      line-height: 1.5;
-    }
-
-    .enrol-btn-secondary {
-      padding: 10px 20px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: none;
-      color: var(--text-dim);
-      font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: 1px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .enrol-btn-secondary:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    /* Speaker badge in header */
-    .speaker-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-family: var(--mono);
-      font-size: 10px;
-      padding: 5px 12px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      cursor: pointer;
-      background: none;
-      color: var(--text-dim);
-      outline: none;
-      transition: all 0.25s;
-      letter-spacing: 0.5px;
-    }
-
-    .speaker-badge:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .speaker-badge .badge-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--warn);
-      transition: background 0.3s;
-    }
-
-    .speaker-badge.enrolled .badge-dot {
-      background: var(--accent);
-      box-shadow: 0 0 6px var(--accent);
-    }
-
-    .speaker-badge.enrolled {
-      border-color: rgba(0, 229, 160, 0.25);
-      color: var(--accent);
-    }
-
-    /* ─────────── FACE ENROLLMENT MODAL ─────────── */
-    .face-enrol-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 200;
-      background: rgba(4, 6, 10, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.35s ease;
-    }
-
-    .face-enrol-overlay.visible {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    /* Face verify panel */
-    .face-panel {
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .face-panel-title {
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--text-dim);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .face-panel-title .face-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--text-dim);
-      transition: background 0.3s;
-    }
-
-    .face-panel-title .face-dot.active {
-      background: var(--accent);
-      box-shadow: 0 0 6px var(--accent);
-    }
-
-    .face-verify-btn {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(0, 229, 160, 0.06);
-      color: var(--accent);
-      font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: 1px;
-      cursor: pointer;
-      transition: all 0.25s;
-      margin-top: 8px;
-    }
-
-    .face-verify-btn:hover {
-      background: rgba(0, 229, 160, 0.15);
-      border-color: var(--accent);
-      box-shadow: 0 0 12px rgba(0, 229, 160, 0.15);
-    }
-
-    .face-verify-btn.active {
-      background: rgba(255, 68, 68, 0.1);
-      border-color: var(--danger);
-      color: var(--danger);
-    }
-
-    .face-verify-btn.active:hover {
-      background: rgba(255, 68, 68, 0.2);
-    }
-
-    .face-match-badge {
-      display: inline-block;
-      font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      padding: 3px 10px;
-      border-radius: 4px;
-      text-transform: uppercase;
-    }
-
-    .face-match-badge.match {
-      background: rgba(0, 229, 160, 0.15);
-      color: var(--accent);
-      border: 1px solid rgba(0, 229, 160, 0.3);
-    }
-
-    .face-match-badge.nomatch {
-      background: rgba(255, 170, 0, 0.12);
-      color: var(--warn);
-      border: 1px solid rgba(255, 170, 0, 0.3);
-    }
-
-    .face-match-badge.noface {
-      background: rgba(100, 100, 100, 0.15);
-      color: var(--text-dim);
-      border: 1px solid var(--border);
-    }
-
-    .face-match-badge.spoof {
-      background: rgba(255, 68, 68, 0.12);
-      color: var(--danger);
-      border: 1px solid rgba(255, 68, 68, 0.3);
-      animation: flash-badge 0.8s step-start infinite;
-    }
-
-    /* Scanning animation for face capture */
-    .face-scan-anim {
-      width: 100px;
-      height: 100px;
-      border: 3px solid var(--accent);
+    #video-stream { width: 100%; height: 100%; object-fit: cover; }
+    
+    /* Overlays matching image design */
+    .video-overlay-top {
+      position: absolute; top: 20px; left: 20px;
+      background: rgba(0,0,0,0.4); color: #fff; padding: 4px 12px;
+      border-radius: 8px; font-size: 12px; backdrop-filter: blur(4px);
+    }
+    .video-overlay-hud {
+      position: absolute; bottom: 20px; right: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
       border-radius: 12px;
-      position: relative;
+      padding: 16px;
+      width: 220px;
+      box-shadow: var(--shadow-lg);
+      font-size: 12px;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 40px;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .hud-title {
+      font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px; color: var(--text-primary);
+      border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 2px;
+    }
+    .hud-row { display: flex; justify-content: space-between; color: var(--text-secondary); }
+    .hud-val { font-weight: 600; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; }
+    
+    #alert-banner {
+      position: absolute; top: 0; left: 0; right: 0;
+      background: rgba(239, 68, 68, 0.95); color: #fff;
+      text-align: center; padding: 12px; font-weight: 700; letter-spacing: 1px;
+      display: none; z-index: 20; animation: slideDown 0.3s ease;
+    }
+    #alert-banner.active { display: block; }
+    @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+
+    #demo-tag {
+      position: absolute; bottom: 20px; left: 20px;
+      background: var(--warning); color: #000; font-weight: 700; font-size: 10px;
+      padding: 4px 8px; border-radius: 4px; display: none;
     }
 
-    .face-scan-anim::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: var(--accent);
-      box-shadow: 0 0 10px var(--accent);
-      animation: faceScan 2s ease-in-out infinite;
+    /* Behavior / Logs Panel */
+    .behavior-panel {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
-
-    @keyframes faceScan {
-      0% {
-        top: 0;
-      }
-
-      50% {
-        top: calc(100% - 3px);
-      }
-
-      100% {
-        top: 0;
-      }
+    .panel-title { font-size: 16px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+    
+    /* Right Pane: Sidebar */
+    .pane-right {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
+    .sidebar-scroll { flex-grow: 1; overflow-y: auto; padding: 20px; }
+    
+    /* Tab Navigation System */
+    .tab-header { display: flex; border-bottom: 1px solid var(--border); background: var(--surface-dim); flex-shrink: 0; }
+    .tab-btn { flex: 1; padding: 16px 10px; background: none; border: none; border-bottom: 2px solid transparent; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; outline: none; text-align: center; }
+    .tab-btn:hover { color: var(--accent); background: rgba(59,130,246,0.03); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--surface); }
+    .tab-pane { display: none; flex-direction: column; gap: 24px; animation: fadeInTab 0.25s ease; }
+    .tab-pane.active { display: flex; }
+    @keyframes fadeInTab { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Task Cards Stylings */
+    .task-card {
+      padding: 16px; border: 1px solid var(--border); border-radius: 12px;
+      background: var(--surface-dim); transition: all 0.2s;
+    }
+    .task-card:hover { border-color: var(--accent); box-shadow: var(--shadow-sm); }
+    .task-card.alerting { border-color: var(--danger); background: rgba(239, 68, 68, 0.02); }
+    
+    .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .task-name { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; color: var(--text-primary); }
+    .task-pred { font-weight: 700; font-size: 14px; color: var(--accent); }
+    .task-pred.alerting { color: var(--danger); }
+    .task-pred.warning { color: var(--warning); }
+    .task-conf { font-size: 11px; color: var(--text-secondary); font-family: 'JetBrains Mono'; }
+
+    .conf-bar-wrap { height: 6px; background: #e2e8f0; border-radius: 3px; margin-bottom: 12px; overflow: hidden; }
+    .conf-bar { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s ease; }
+    .conf-bar.alerting { background: var(--danger); }
+    
+    .class-bars { display: flex; flex-direction: column; gap: 6px; }
+    .class-row { display: grid; grid-template-columns: 80px 1fr 36px; gap: 8px; align-items: center; }
+    .class-name { font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .class-name.active { font-weight: 600; color: var(--text-primary); }
+    .class-bar-wrap { height: 4px; background: #f1f5f9; border-radius: 2px; overflow: hidden; }
+    .class-bar { height: 100%; background: #cbd5e1; border-radius: 2px; transition: width 0.3s; }
+    .class-bar.active { background: var(--accent); }
+    .class-pct { font-size: 10px; color: var(--text-secondary); text-align: right; font-family: 'JetBrains Mono'; }
+    
+    /* Gaze Grid widget */
+    .gaze-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; height: 80px; margin-bottom: 12px; }
+    .gaze-cell {
+      border: 1px solid #e2e8f0; border-radius: 8px; background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 500; color: var(--text-secondary); text-align: center;
+      transition: all 0.2s;
+    }
+    .gaze-cell.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+
+    /* Voice/Face Widget Specifics */
+    .widget-card {
+      background: var(--surface-dim); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+    }
+    .widget-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .widget-title { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+    .indicator-dot { width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; }
+    .indicator-dot.active { background: var(--success); box-shadow: 0 0 6px var(--success); }
+    
+    .transcript-box {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px; font-size: 13px; min-height: 40px; margin-bottom: 12px; font-style: italic; color: var(--text-secondary);
+    }
+    .info-row { display: flex; justify-content: space-between; font-size: 12px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.03); }
+    .info-label { color: var(--text-secondary); }
+    .info-val { font-weight: 600; color: var(--text-primary); }
+    
+    .progress-line-wrap { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .progress-line { height: 100%; background: var(--accent); transition: width 0.3s; }
+    .progress-line.danger { background: var(--danger); }
+    .progress-line.warn { background: var(--warning); }
+    
+    .action-btn {
+      width: 100%; padding: 10px; border: 1px solid var(--accent); border-radius: 8px;
+      background: var(--accent-light); color: var(--accent); font-weight: 600; font-size: 13px;
+      cursor: pointer; transition: all 0.2s; margin-top: 12px;
+    }
+    .action-btn:hover { background: var(--accent); color: #fff; }
+    .action-btn.active { background: var(--danger); border-color: var(--danger); color: #fff; }
+
+    /* Alert Log styling matching sidebar theme */
+    .alert-log { margin-top: auto; border-top: 1px solid var(--border); padding-top: 16px; }
+    .alert-list { display: flex; flex-direction: column; gap: 8px; max-height: 150px; overflow-y: auto; }
+    .alert-item {
+      font-size: 11px; padding: 8px 12px; border-radius: 6px; background: #fff;
+      border-left: 4px solid var(--warning); box-shadow: var(--shadow-sm); display: flex; gap: 8px;
+    }
+    .alert-item.danger { border-left-color: var(--danger); }
+
+    /* Footer Stats (Sticky at bottom of Right Pane) */
+    .pane-footer {
+      background: var(--surface-dim); border-top: 1px solid var(--border);
+      padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; text-align: center;
+    }
+    .stat-cell { display: flex; flex-direction: column; gap: 4px; }
+    .stat-label { font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; }
+    .stat-val { font-size: 20px; font-weight: 700; color: var(--text-primary); font-family: 'JetBrains Mono'; }
+
+    /* Modals (Light theme glassmorphism) */
+    .overlay-modal {
+      position: fixed; inset: 0; z-index: 100; background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .overlay-modal.visible { opacity: 1; pointer-events: auto; }
+    .modal-card {
+      background: #fff; border-radius: 24px; box-shadow: var(--shadow-lg); width: 400px; max-width: 90vw;
+      overflow: hidden; padding: 32px; text-align: center; transform: translateY(20px); transition: transform 0.3s;
+    }
+    .overlay-modal.visible .modal-card { transform: translateY(0); }
+    .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+    .modal-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; }
+    
+    .form-input {
+      width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px;
+      font-family: inherit; font-size: 15px; margin-bottom: 16px; outline: none;
+    }
+    .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+    
+    .primary-btn {
+      background: var(--accent); color: #fff; border: none; padding: 14px; border-radius: 12px;
+      width: 100%; font-weight: 700; font-size: 15px; cursor: pointer; transition: opacity 0.2s;
+    }
+    .primary-btn:hover { opacity: 0.9; }
+    .primary-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+    
+    /* Shared Utilities */
+    .badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+    .badge.none { background: #f1f5f9; color: var(--text-secondary); }
+    .badge.caution { background: #fffbeb; color: var(--warning); }
+    .badge.warning { background: #fff7ed; color: #c2410c; }
+    .badge.danger, .badge.alert, .badge.critical { background: #fef2f2; color: var(--danger); }
+    
+    #conn-overlay {
+      position: fixed; inset: 0; z-index: 1000; background: #fff; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; transition: opacity 0.5s;
+    }
+    #conn-overlay.hidden { opacity: 0; pointer-events: none; }
+    .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Simple header action button styles */
+    .action-pill {
+      cursor: pointer; background: var(--accent-light); color: var(--accent);
+      border: 1px solid transparent; padding: 6px 14px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; transition: all 0.2s; display: flex; gap: 6px; align-items: center;
+    }
+    .action-pill:hover { border-color: var(--accent); }
+    .action-pill.enrolled { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+    
+    /* Circular Progress ring for modals */
+    .progress-ring-wrap { position: relative; width: 100px; height: 100px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; }
+    .progress-ring-wrap svg { transform: rotate(-90deg); }
+    .ring-bg { fill: none; stroke: #f1f5f9; stroke-width: 6; }
+    .ring-fg { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 0.35s; }
+    .ring-text { position: absolute; font-family: 'JetBrains Mono'; font-weight: 700; font-size: 18px; color: var(--accent); }
+
   </style>
 </head>
-
 <body>
 
-  <!-- Connection overlay -->
+  <!-- Initial Loader Overlay -->
   <div id="conn-overlay">
     <div class="spinner"></div>
-    <p>CONNECTING TO DMS...</p>
+    <p style="font-weight:600; color:var(--text-secondary);">Initializing Advanced DMS Pipeline...</p>
   </div>
 
-  <!-- ── Enrollment Modal ── -->
-  <div class="enrol-overlay" id="enrol-overlay">
-    <div class="enrol-card">
-      <div class="enrol-card-header">
-        <h2><span>🎤</span> Driver Enrollment</h2>
-        <button class="enrol-close" onclick="closeEnrolModal()">&times;</button>
+  <!-- Header bar -->
+  <header>
+    <div class="header-profile">
+      <div class="driver-avatar">👤</div>
+      <div class="driver-details">
+        <h1 id="active-driver-display">Driver Unverified</h1>
+        <p>System Active • Live Telematics Mode</p>
       </div>
+    </div>
+    
+    <div class="header-stats">
+      <div class="status-pill">
+        <div class="dot live" id="model-dot"></div>
+        <span id="model-status">Model</span>
+      </div>
+      <div class="status-pill">
+        <div class="dot live" id="cam-dot"></div>
+        <span id="cam-status">Cam</span>
+      </div>
+      <span id="fps-badge" style="font-family:'JetBrains Mono'; font-size:12px; color:var(--text-secondary);">-- FPS</span>
+      
+      <div style="width: 1px; height: 24px; background: var(--border); margin: 0 8px;"></div>
 
-      <!-- Step indicators -->
-      <div class="enrol-steps">
-        <div class="enrol-step-dot active" id="edot-1">1</div>
-        <div class="enrol-step-line" id="eline-1"></div>
-        <div class="enrol-step-dot" id="edot-2">2</div>
-        <div class="enrol-step-line" id="eline-2"></div>
-        <div class="enrol-step-dot" id="edot-3">3</div>
-      </div>
-      <div class="enrol-step-labels">
-        <span class="enrol-step-lbl active" id="elbl-1">Identity</span>
-        <span class="enrol-step-lbl" id="elbl-2">Record</span>
-        <span class="enrol-step-lbl" id="elbl-3">Done</span>
-      </div>
+      <button class="action-pill" id="speaker-badge" onclick="openEnrolModal()">
+        🎤 <span id="speaker-badge-text">Enroll Voice</span>
+      </button>
+      <button class="action-pill" id="face-badge" onclick="openFaceEnrolModal()">
+        🔒 <span id="face-badge-text">Enroll Face</span>
+      </button>
+    </div>
+  </header>
 
-      <div class="enrol-body">
-        <!-- Step 1: Driver Name -->
-        <div class="enrol-step-content active" id="estep-1">
-          <div class="enrol-input-group">
-            <label for="driver-name-input">Driver Name</label>
-            <input type="text" class="enrol-input" id="driver-name-input" placeholder="Enter driver name"
-              autocomplete="off" maxlength="40">
-          </div>
-          <p
-            style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-align:center;line-height:1.5;margin:4px 0">
-            A 5-second voice sample will be recorded to create<br>a unique voiceprint for driver identification.
-          </p>
-          <button class="enrol-btn-primary" id="enrol-begin-btn" onclick="startEnrolment()">Begin Enrollment</button>
+  <main class="main-container">
+    <!-- Left Pane: Dynamic Floating Video Space -->
+    <div class="pane-left" style="overflow:visible;">
+      <div class="video-panel" style="flex-grow: 1; aspect-ratio: unset;">
+        <div id="alert-banner">⚠️ CRITICAL: DROWSINESS DETECTED — TAKE A BREAK ⚠️</div>
+        <div class="video-overlay-top">Camera 01 • Live Stream</div>
+        <img id="video-stream" src="/video_feed" alt="Camera Feed" style="object-fit: cover;">
+        <div id="demo-tag">DEMO ACTIVE</div>
+        
+        <!-- Overlaid Quick Insight Box mirroring screenshot aesthetic -->
+        <div class="video-overlay-hud">
+          <div class="hud-title">✨ System Status</div>
+          <div class="hud-row"><span>Alert Status</span><span class="hud-val" id="hud-alert-lvl" style="color:var(--success)">CLEAR</span></div>
+          <div class="hud-row"><span>FPS Tracking</span><span class="hud-val" id="hud-fps">--</span></div>
+          <div class="hud-row"><span>Audio Activity</span><span class="hud-val" id="hud-audio">IDLE</span></div>
         </div>
+      </div>
+    </div>
 
-        <!-- Step 2: Recording -->
-        <div class="enrol-step-content" id="estep-2">
-          <div class="enrol-progress-ring-wrap">
-            <svg width="120" height="120" viewBox="0 0 120 120">
-              <circle class="enrol-ring-bg" cx="60" cy="60" r="52"></circle>
-              <circle class="enrol-ring-fg" id="enrol-ring" cx="60" cy="60" r="52" stroke-dasharray="326.73"
-                stroke-dashoffset="326.73"></circle>
-            </svg>
-            <div class="enrol-ring-text">
-              <span class="enrol-ring-pct" id="enrol-pct">0%</span>
-              <span class="enrol-ring-label" id="enrol-phase-label">Waiting</span>
+    <!-- Right Pane: Analytical Tab Stacks -->
+    <div class="pane-right">
+      <!-- Tab Headers (Mirroring screenshot tab layout) -->
+      <div class="tab-header">
+        <button class="tab-btn active" onclick="switchTab('vision')">Vision</button>
+        <button class="tab-btn" onclick="switchTab('speech')">Speech</button>
+        <button class="tab-btn" onclick="switchTab('face')">Face</button>
+      </div>
+
+      <div class="sidebar-scroll">
+        
+        <!-- Tab 1: Vision Data -->
+        <div id="tab-vision" class="tab-pane active">
+          <div id="sidebar" style="display:flex; flex-direction:column; gap:24px;">
+            <div style="border-bottom: 1px solid var(--border); padding-bottom:12px; margin-bottom:-12px;">
+              <h2 style="font-size: 15px; font-weight:700;">Vision Risk Vectors</h2>
+              <p style="font-size: 11px; color:var(--text-secondary); margin-top:2px;">Active multi-task classification</p>
+            </div>
+            <!-- Javascript injects .task-cards here -->
+            
+            <div class="alert-log" id="alert-log">
+              <h3 style="font-size:13px; font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:6px;">📋 Live Event History</h3>
+              <div class="alert-list" id="alert-list">
+                 <div style="font-size:12px; color:var(--text-secondary); font-style:italic;">Awaiting event stream...</div>
+              </div>
             </div>
           </div>
-          <div class="enrol-waveform" id="enrol-waveform">
-            <div class="enrol-wave-bar"></div>
-            <div class="enrol-wave-bar"></div>
-            <div class="enrol-wave-bar"></div>
-            <div class="enrol-wave-bar"></div>
-            <div class="enrol-wave-bar"></div>
-            <div class="enrol-wave-bar"></div>
-            <div class="enrol-wave-bar"></div>
-          </div>
-          <div class="enrol-msg" id="enrol-status-msg">Speak clearly into the microphone</div>
         </div>
 
-        <!-- Step 3: Result -->
-        <div class="enrol-step-content" id="estep-3">
-          <div class="enrol-result-icon success" id="enrol-result-icon">✓</div>
-          <div class="enrol-result-title" id="enrol-result-title">Enrollment Complete</div>
-          <div class="enrol-result-msg" id="enrol-result-msg">
-            Driver voiceprint saved successfully.<br>Speech will now be attributed to you.
+        <!-- Tab 2: Speech Engine -->
+        <div id="tab-speech" class="tab-pane">
+          <div style="border-bottom: 1px solid var(--border); padding-bottom:12px; margin-bottom:4px;">
+            <h2 style="font-size: 15px; font-weight:700;">Speech Analysis</h2>
+            <p style="font-size: 11px; color:var(--text-secondary); margin-top:2px;">NLP and Acoustic fingerprinting</p>
           </div>
-          <div style="display:flex;gap:10px;margin-top:8px">
-            <button class="enrol-btn-secondary" onclick="resetEnrolModal()">Re-enrol</button>
-            <button class="enrol-btn-primary" style="width:auto;padding:10px 24px;font-size:12px"
-              onclick="closeEnrolModal()">Close</button>
+
+          <div id="voice-panel" class="widget-card" style="background:var(--surface-dim); border: 1px solid var(--border);">
+             <div class="transcript-box" id="transcript-box" style="background:#fff; font-size:14px;">Listening for speech stream...</div>
+             <div class="info-row"><span class="info-label">🗣️ Identified Speaker</span><span class="info-val" id="voice-speaker">—</span></div>
+             <div class="info-row"><span class="info-label">💡 Keywords Captured</span><span class="info-val" id="voice-keyword" style="color:var(--warning)">—</span></div>
+             <div class="info-row"><span class="info-label">🧠 Text Sentiment</span><span class="info-val" id="voice-bert">—</span></div>
+             
+             <div style="margin-top:16px;">
+               <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:var(--text-secondary); margin-bottom:6px;">
+                  <span>FUSED AUDITORY RISK</span>
+                  <span id="voice-risk-score">0.00</span>
+               </div>
+               <div class="progress-line-wrap" style="height:8px;"><div class="progress-line" id="voice-risk-bar" style="width:0%;"></div></div>
+             </div>
+             <div style="display:flex; justify-content:space-between; margin-top:20px; align-items:center;">
+                <span class="badge none" id="voice-alert-badge" style="padding: 4px 10px;">LEVEL: NONE</span>
+                <span id="voice-latency" style="font-family:'JetBrains Mono'; font-size:11px; color:var(--text-secondary);">--ms</span>
+             </div>
           </div>
         </div>
+
+        <!-- Tab 3: Face ID Verification -->
+        <div id="tab-face" class="tab-pane">
+          <div style="border-bottom: 1px solid var(--border); padding-bottom:12px; margin-bottom:4px;">
+            <h2 style="font-size: 15px; font-weight:700;">Driver Verification</h2>
+            <p style="font-size: 11px; color:var(--text-secondary); margin-top:2px;">Secure ID confirmation & liveness detection</p>
+          </div>
+
+          <div id="face-panel" class="widget-card" style="background:var(--surface-dim); border: 1px solid var(--border);">
+             <div class="widget-header" style="margin-bottom:12px;">
+               <span style="font-weight:600; font-size:13px; color:var(--text-primary);">🛡️ Passive Biometric Scan</span>
+               <div class="indicator-dot" id="face-verify-dot"></div>
+             </div>
+             <div class="info-row"><span class="info-label">Match Status</span><span class="info-val" id="face-match-badge" style="font-weight:800;">INITIALIZING</span></div>
+             <div class="info-row"><span class="info-label">Similarity Vectors</span><span class="info-val" id="face-similarity">—</span></div>
+             <div class="info-row"><span class="info-label">Anti-Spoof Integrity</span><span class="info-val" id="face-liveness">—</span></div>
+             
+             <div class="progress-line-wrap" style="margin-top:16px; height:8px;"><div class="progress-line" id="face-sim-bar" style="width:0%"></div></div>
+             
+             <button class="action-btn" id="face-verify-toggle-btn" onclick="toggleFaceVerify()" style="padding: 12px; margin-top: 24px; font-size:14px;">▶ ENABLE FACE ID SCANNER</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Summary Statistics Fixed Footer -->
+      <div class="pane-footer">
+        <div class="stat-cell" style="border-right: 1px solid var(--border);">
+          <span class="stat-label">Alert Log</span>
+          <span class="stat-val" id="alert-count" style="color:var(--danger)">0</span>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-label">Run Duration</span>
+          <span class="stat-val" id="uptime">0s</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==========================================
+       MODALS & DIALOGS
+       ========================================== -->
+
+  <!-- VOICE MODAL -->
+  <div class="overlay-modal" id="enrol-overlay">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+        <h2 class="modal-title">🎙️ Voice Enrollment</h2>
+        <button style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-secondary);" onclick="closeEnrolModal()">&times;</button>
+      </div>
+      
+      <!-- Steps Tracking Bar (hidden simplification but maintaining IDs) -->
+      <div id="edot-1" style="display:none"></div><div id="elbl-1" style="display:none"></div><div id="eline-1" style="display:none"></div>
+      <div id="edot-2" style="display:none"></div><div id="elbl-2" style="display:none"></div><div id="eline-2" style="display:none"></div>
+      <div id="edot-3" style="display:none"></div><div id="elbl-3" style="display:none"></div>
+
+      <div id="estep-1" class="enrol-step-content" style="display:block">
+        <p class="modal-desc">Register your vocal fingerprint for high-confidence identification.</p>
+        <input type="text" class="form-input" id="driver-name-input" placeholder="Driver Full Name">
+        <button class="primary-btn" id="enrol-begin-btn" onclick="startEnrolment()">Begin Sampling</button>
+      </div>
+
+      <div id="estep-2" class="enrol-step-content" style="display:none">
+        <div class="progress-ring-wrap">
+          <svg width="100" height="100"><circle class="ring-bg" cx="50" cy="50" r="45"></circle><circle class="ring-fg" id="enrol-ring" cx="50" cy="50" r="45" stroke-dasharray="282.7" stroke-dashoffset="282.7"></circle></svg>
+          <span class="ring-text" id="enrol-pct">0%</span>
+        </div>
+        <p id="enrol-phase-label" style="font-weight:700; color:var(--accent); margin-bottom:4px;">RECORDING</p>
+        <p class="modal-desc" id="enrol-status-msg">Speak naturally into the microphone...</p>
+      </div>
+
+      <div id="estep-3" class="enrol-step-content" style="display:none">
+        <div style="font-size: 48px; margin-bottom:16px;">✅</div>
+        <h3 id="enrol-result-title" style="font-weight:700; margin-bottom:8px;">Complete</h3>
+        <p id="enrol-result-msg" class="modal-desc">Sample stored successfully.</p>
+        <button class="primary-btn" onclick="closeEnrolModal()">Done</button>
       </div>
     </div>
   </div>
 
-  <!-- ── Face Enrollment Modal ── -->
-  <div class="face-enrol-overlay" id="face-enrol-overlay">
-    <div class="enrol-card">
-      <div class="enrol-card-header">
-        <h2><span>🔒</span> Face Enrollment</h2>
-        <button class="enrol-close" onclick="closeFaceEnrolModal()">&times;</button>
+  <!-- FACE MODAL -->
+  <div class="overlay-modal" id="face-enrol-overlay">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+        <h2 class="modal-title">🔒 Face Registration</h2>
+        <button style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-secondary);" onclick="closeFaceEnrolModal()">&times;</button>
+      </div>
+      
+      <div id="fdot-1" style="display:none"></div><div id="flbl-1" style="display:none"></div><div id="fline-1" style="display:none"></div>
+      <div id="fdot-2" style="display:none"></div><div id="flbl-2" style="display:none"></div><div id="fline-2" style="display:none"></div>
+      <div id="fdot-3" style="display:none"></div><div id="flbl-3" style="display:none"></div>
+
+      <div id="fstep-1" class="enrol-step-content" style="display:block">
+        <p class="modal-desc">Look directly at the camera under good lighting to save geometric embeddings.</p>
+        <input type="text" class="form-input" id="face-driver-name-input" placeholder="Driver Full Name">
+        <button class="primary-btn" id="face-enrol-begin-btn" onclick="startFaceEnrolment()">Start Capture</button>
       </div>
 
-      <!-- Step indicators -->
-      <div class="enrol-steps">
-        <div class="enrol-step-dot active" id="fdot-1">1</div>
-        <div class="enrol-step-line" id="fline-1"></div>
-        <div class="enrol-step-dot" id="fdot-2">2</div>
-        <div class="enrol-step-line" id="fline-2"></div>
-        <div class="enrol-step-dot" id="fdot-3">3</div>
-      </div>
-      <div class="enrol-step-labels">
-        <span class="enrol-step-lbl active" id="flbl-1">Identity</span>
-        <span class="enrol-step-lbl" id="flbl-2">Capture</span>
-        <span class="enrol-step-lbl" id="flbl-3">Done</span>
+      <div id="fstep-2" class="enrol-step-content" style="display:none">
+        <div class="progress-ring-wrap">
+          <svg width="100" height="100"><circle class="ring-bg" cx="50" cy="50" r="45"></circle><circle class="ring-fg" id="face-enrol-ring" cx="50" cy="50" r="45" stroke-dasharray="282.7" stroke-dashoffset="282.7"></circle></svg>
+          <span class="ring-text" id="face-enrol-pct">0%</span>
+        </div>
+        <p id="face-enrol-phase-label" style="font-weight:700; color:var(--accent); margin-bottom:4px;">CAPTURING</p>
+        <p class="modal-desc" id="face-enrol-status-msg">Stay completely still, analyzing live feed...</p>
       </div>
 
-      <div class="enrol-body">
-        <!-- Step 1: Driver Name -->
-        <div class="enrol-step-content active" id="fstep-1">
-          <div class="enrol-input-group">
-            <label for="face-driver-name-input">Driver Name</label>
-            <input type="text" class="enrol-input" id="face-driver-name-input" placeholder="Enter driver name"
-              autocomplete="off" maxlength="40">
-          </div>
-          <p
-            style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-align:center;line-height:1.5;margin:4px 0">
-            Look directly at the camera. Your face will be<br>captured and verified via liveness detection.
-          </p>
-          <button class="enrol-btn-primary" id="face-enrol-begin-btn" onclick="startFaceEnrolment()">Begin Face
-            Enrollment</button>
-        </div>
-
-        <!-- Step 2: Capturing -->
-        <div class="enrol-step-content" id="fstep-2">
-          <div class="face-scan-anim" id="face-scan-anim">👤</div>
-          <div class="enrol-progress-ring-wrap">
-            <svg width="120" height="120" viewBox="0 0 120 120">
-              <circle class="enrol-ring-bg" cx="60" cy="60" r="52"></circle>
-              <circle class="enrol-ring-fg" id="face-enrol-ring" cx="60" cy="60" r="52" stroke-dasharray="326.73"
-                stroke-dashoffset="326.73"></circle>
-            </svg>
-            <div class="enrol-ring-text">
-              <span class="enrol-ring-pct" id="face-enrol-pct">0%</span>
-              <span class="enrol-ring-label" id="face-enrol-phase-label">Waiting</span>
-            </div>
-          </div>
-          <div class="enrol-msg" id="face-enrol-status-msg">Look at the camera steadily</div>
-        </div>
-
-        <!-- Step 3: Result -->
-        <div class="enrol-step-content" id="fstep-3">
-          <div class="enrol-result-icon success" id="face-enrol-result-icon">✓</div>
-          <div class="enrol-result-title" id="face-enrol-result-title">Enrollment Complete</div>
-          <div class="enrol-result-msg" id="face-enrol-result-msg">
-            Face embedding saved successfully.<br>Face verification is now available.
-          </div>
-          <div style="display:flex;gap:10px;margin-top:8px">
-            <button class="enrol-btn-secondary" onclick="resetFaceEnrolModal()">Re-enrol</button>
-            <button class="enrol-btn-primary" style="width:auto;padding:10px 24px;font-size:12px"
-              onclick="closeFaceEnrolModal()">Close</button>
-          </div>
-        </div>
+      <div id="fstep-3" class="enrol-step-content" style="display:none">
+        <div style="font-size: 48px; margin-bottom:16px;">✅</div>
+        <h3 id="face-enrol-result-title" style="font-weight:700; margin-bottom:8px;">Registered</h3>
+        <p id="face-enrol-result-msg" class="modal-desc">Face vector mapped successfully.</p>
+        <button class="primary-btn" onclick="closeFaceEnrolModal()">Done</button>
       </div>
     </div>
   </div>
-
-  <div class="shell">
-
-    <!-- ── Header ── -->
-    <header>
-      <div class="logo">
-        <div class="logo-icon"><span>◈</span></div>
-        <div>
-          <div class="logo-text">DMS Live</div>
-          <div class="logo-sub">Driver Monitoring System</div>
-        </div>
-      </div>
-      <div class="header-right">
-        <div class="status-pill">
-          <div class="dot live" id="model-dot"></div>
-          <span id="model-status">Loading...</span>
-        </div>
-        <div class="status-pill">
-          <div class="dot live" id="cam-dot"></div>
-          <span id="cam-status">Camera</span>
-        </div>
-        <button id="speaker-badge" class="speaker-badge" onclick="openEnrolModal()">
-          <div class="badge-dot"></div>
-          <span id="speaker-badge-text">NOT ENROLLED</span>
-        </button>
-        <button id="face-badge" class="speaker-badge" onclick="openFaceEnrolModal()">
-          <div class="badge-dot"></div>
-          <span id="face-badge-text">🔒 NO FACE</span>
-        </button>
-        <span id="fps-badge">-- FPS</span>
-      </div>
-    </header>
-
-    <!-- ── Video feed ── -->
-    <div class="video-panel">
-      <div class="bracket bracket--tl"></div>
-      <div class="bracket bracket--tr"></div>
-      <div class="bracket bracket--bl"></div>
-      <div class="bracket bracket--br"></div>
-      <img id="video-stream" src="/video_feed" alt="Live feed">
-      <div id="alert-banner">⚠ DROWSINESS DETECTED — PLEASE PULL OVER</div>
-      <div id="demo-tag">DEMO MODE</div>
-    </div>
-
-    <!-- ── Sidebar ── -->
-    <div class="sidebar" id="sidebar">
-      <div class="sidebar-header">Live Predictions — All Tasks</div>
-      <!-- Task cards injected by JS -->
-
-      <!-- Voice Analysis Panel -->
-      <div class="voice-panel" id="voice-panel">
-        <div class="voice-panel-title">
-          <span>🎤</span>
-          <span>Voice Analysis</span>
-          <div class="voice-dot" id="voice-dot"></div>
-        </div>
-
-        <!-- Transcript -->
-        <div class="voice-transcript-box" id="transcript-box">
-          Waiting for speech…
-        </div>
-
-        <!-- Keyword -->
-        <div class="voice-row">
-          <span class="voice-label">🔑 Keyword</span>
-          <span class="voice-val" id="voice-keyword">—</span>
-        </div>
-
-        <!-- Speaker ID -->
-        <div class="voice-row">
-          <span class="voice-label">🆔 Speaker</span>
-          <span class="voice-val" id="voice-speaker">—</span>
-        </div>
-
-        <!-- BERT -->
-        <div class="voice-row">
-          <span class="voice-label">🧠 Sentiment</span>
-          <span class="voice-val" id="voice-bert">—</span>
-        </div>
-
-        <!-- Text Risk -->
-        <div class="voice-row">
-          <span class="voice-label">⚡ Text Risk</span>
-          <span class="voice-val" id="voice-text-risk">0.0</span>
-        </div>
-
-        <!-- Final Risk -->
-        <div class="voice-row">
-          <span class="voice-label">📊 Risk Score</span>
-          <span class="voice-val" id="voice-risk-score">0.0</span>
-        </div>
-        <div class="risk-bar-wrap">
-          <div class="risk-bar" id="voice-risk-bar" style="width:0%"></div>
-        </div>
-
-        <!-- Alert Level -->
-        <div class="voice-row" style="margin-top:8px">
-          <span class="voice-label">🚨 Alert</span>
-          <span class="alert-badge none" id="voice-alert-badge">NONE</span>
-        </div>
-
-        <!-- Latency -->
-        <div class="voice-row">
-          <span class="voice-label">⏱ Latency</span>
-          <span class="voice-val" id="voice-latency">—</span>
-        </div>
-      </div>
-
-      <!-- Face Verification Panel -->
-      <div class="face-panel" id="face-panel">
-        <div class="face-panel-title">
-          <span>🔒</span>
-          <span>Face Verification</span>
-          <div class="face-dot" id="face-verify-dot"></div>
-        </div>
-
-        <div class="voice-row">
-          <span class="voice-label">👤 Identity</span>
-          <span class="face-match-badge noface" id="face-match-badge">NO FACE</span>
-        </div>
-
-        <div class="voice-row">
-          <span class="voice-label">📊 Similarity</span>
-          <span class="voice-val" id="face-similarity">—</span>
-        </div>
-
-        <div class="voice-row">
-          <span class="voice-label">🛡️ Liveness</span>
-          <span class="voice-val" id="face-liveness">—</span>
-        </div>
-
-        <div class="risk-bar-wrap">
-          <div class="risk-bar" id="face-sim-bar" style="width:0%"></div>
-        </div>
-
-        <button class="face-verify-btn" id="face-verify-toggle-btn" onclick="toggleFaceVerify()">
-          ▶ START FACE VERIFY
-        </button>
-      </div>
-
-      <div class="alert-log">
-        <div class="alert-log-title">Alert Log</div>
-        <div class="alert-list" id="alert-list">
-          <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim)">
-            No alerts yet.
-          </div>
-        </div>
-      </div>
-
-      <div class="stats-row">
-        <div class="stat-cell">
-          <div class="stat-label">Alerts</div>
-          <div class="stat-val" id="alert-count">0</div>
-        </div>
-        <div class="stat-cell">
-          <div class="stat-label">Uptime</div>
-          <div class="stat-val" id="uptime">0s</div>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- .shell -->
 
   <script>
     // ── Data from Flask ──────────────────────────────────────────
@@ -1750,8 +553,7 @@
     let lastPreds = {};
     let demoMode = false;
 
-    // Gaze grid layout: [row, col] for each class
-    // 3x3 grid: TopLeft TopCenter TopRight / MiddleLeft [centre] MiddleRight / BottomLeft BottomCenter BottomRight
+    // Gaze grid layout map for JS logic consistency
     const GAZE_GRID_POS = {
       "Top-Left": [0, 0], "Top-Center": [0, 1], "Top-Right": [0, 2],
       "Middle-Left": [1, 0], "Middle-Right": [1, 2],
@@ -1761,8 +563,7 @@
     // ── Build sidebar cards ──────────────────────────────────────
     function buildSidebar() {
       const sidebar = document.getElementById("sidebar");
-      const log = sidebar.querySelector(".alert-log");
-      const stats = sidebar.querySelector(".stats-row");
+      const log = document.getElementById("alert-log");
 
       TASK_ORDER.forEach(task => {
         const meta = TASK_META[task];
@@ -1775,23 +576,21 @@
         const classesHTML = isGaze ? buildGazeGrid() : buildClassBars(task, classes);
 
         card.innerHTML = `
-      <div class="task-header">
-        <div class="task-name">
-          <span class="task-icon">${meta.icon}</span>
-          <span class="task-label">${meta.label}</span>
-        </div>
-        <div>
-          <div class="task-pred" id="pred-${task}">—</div>
-          <div class="task-conf" id="conf-${task}">—</div>
-        </div>
-      </div>
-      <div class="conf-bar-wrap">
-        <div class="conf-bar" id="confbar-${task}" style="width:0%"></div>
-      </div>
-      ${classesHTML}
-    `;
-
-        // Insert before alert-log
+          <div class="task-header">
+            <div class="task-name">
+              <span>${meta.icon}</span>
+              <span>${meta.label}</span>
+            </div>
+            <div style="text-align:right;">
+              <div class="task-pred" id="pred-${task}">—</div>
+              <div class="task-conf" id="conf-${task}">—</div>
+            </div>
+          </div>
+          <div class="conf-bar-wrap">
+            <div class="conf-bar" id="confbar-${task}" style="width:0%"></div>
+          </div>
+          ${classesHTML}
+        `;
         sidebar.insertBefore(card, log);
       });
     }
@@ -1799,19 +598,16 @@
     function buildClassBars(task, classes) {
       const ids = Object.keys(classes);
       return `<div class="class-bars" id="bars-${task}">
-    ${ids.map(id => `
-      <div class="class-row" id="row-${task}-${id}">
-        <span class="class-name" id="cname-${task}-${id}">${classes[id]}</span>
-        <div class="class-bar-wrap">
-          <div class="class-bar" id="cbar-${task}-${id}" style="width:0%"></div>
-        </div>
-        <span class="class-pct" id="cpct-${task}-${id}">0%</span>
-      </div>`).join("")}
-  </div>`;
+        ${ids.map(id => `
+          <div class="class-row" id="row-${task}-${id}">
+            <span class="class-name" id="cname-${task}-${id}">${classes[id]}</span>
+            <div class="class-bar-wrap"><div class="class-bar" id="cbar-${task}-${id}" style="width:0%"></div></div>
+            <span class="class-pct" id="cpct-${task}-${id}">0%</span>
+          </div>`).join("")}
+      </div>`;
     }
 
     function buildGazeGrid() {
-      // 3x3 grid cells
       const cells = [
         ["Top-Left", "Top-Center", "Top-Right"],
         ["Middle-Left", "—", "Middle-Right"],
@@ -1819,31 +615,27 @@
       ];
       const rows = cells.map(row =>
         row.map(label => {
-          if (label === "—") {
-            return `<div class="gaze-cell gaze-center" style="background:rgba(0,229,160,0.04);color:var(--accent);font-size:14px">◉</div>`;
-          }
+          if (label === "—") return `<div class="gaze-cell" style="background:#f8fafc; border:none; color:var(--accent); font-size:14px">◉</div>`;
           const safeId = label.replace(/\s+/g, "-").toLowerCase();
-          return `<div class="gaze-cell" id="gaze-cell-${safeId}">${label.replace("-", "\n")}</div>`;
+          return `<div class="gaze-cell" id="gaze-cell-${safeId}">${label.replace("-", " ")}</div>`;
         }).join("")
       ).join("");
 
       return `<div class="gaze-grid">${rows}</div>
-  <div class="class-bars" id="bars-gaze" style="margin-top:8px">
-    ${Object.entries(TASK_META.gaze.classes).map(([id, name]) => `
-      <div class="class-row">
-        <span class="class-name" id="cname-gaze-${id}">${name}</span>
-        <div class="class-bar-wrap">
-          <div class="class-bar" id="cbar-gaze-${id}" style="width:0%"></div>
-        </div>
-        <span class="class-pct" id="cpct-gaze-${id}">0%</span>
-      </div>`).join("")}
-  </div>`;
+      <div class="class-bars" id="bars-gaze" style="display:none">
+        ${Object.entries(TASK_META.gaze.classes).map(([id, name]) => `
+          <div class="class-row">
+            <span class="class-name" id="cname-gaze-${id}">${name}</span>
+            <div class="class-bar-wrap"><div class="class-bar" id="cbar-gaze-${id}" style="width:0%"></div></div>
+            <span class="class-pct" id="cpct-gaze-${id}">0%</span>
+          </div>`).join("")}
+      </div>`;
     }
 
     // ── Update UI from predictions ───────────────────────────────
     function updateUI(predictions, fps, audio = null) {
-      // FPS
       document.getElementById("fps-badge").textContent = `${fps} FPS`;
+      document.getElementById("hud-fps").textContent = `${fps} fps`;
 
       let globalAlert = false;
 
@@ -1859,39 +651,28 @@
 
         const pct = Math.round(p.confidence * 100);
         const label = p.label;
+        
         const isAlert = meta.alert_class !== null &&
           p.pred === meta.alert_class &&
           p.confidence > (meta.alert_threshold || 0.6);
+          
         const isWarn = !isAlert && (
           (task === "activity" && p.label !== "None" && p.label !== "Seatbelt" && p.confidence > 0.5) ||
           (task === "distraction" && p.label === "Distracted" && p.confidence > 0.5)
         );
 
-        // Prediction label
         predEl.textContent = label;
-        predEl.className = "task-pred" +
-          (isAlert ? " alerting" : isWarn ? " warning" : "");
-
-        // Confidence
-        confEl.textContent = `${pct}% confidence`;
-
-        // Confidence bar
+        predEl.className = "task-pred" + (isAlert ? " alerting" : isWarn ? " warning" : "");
+        confEl.textContent = `${pct}% conf`;
         confBar.style.width = `${pct}%`;
-        confBar.className = "conf-bar" +
-          (isAlert ? " alerting" : isWarn ? " warning" : "");
-
-        // Card highlight
+        confBar.className = "conf-bar" + (isAlert ? " alerting" : isWarn ? " warning" : "");
         card.className = "task-card" + (isAlert ? " alerting" : "");
 
-        // Per-class bars
         const probs = p.probs || {};
         Object.entries(probs).forEach(([className, prob]) => {
           const isActive = className === label;
           const bPct = Math.round(prob * 100);
-
-          // Find which numeric id matches
-          const classId = Object.entries(meta.classes)
-            .find(([, v]) => v === className)?.[0];
+          const classId = Object.entries(meta.classes).find(([, v]) => v === className)?.[0];
           if (classId === undefined) return;
 
           const nameEl = document.getElementById(`cname-${task}-${classId}`);
@@ -1909,168 +690,134 @@
           }
         });
 
-        // Gaze grid update
         if (task === "gaze") {
-          document.querySelectorAll(".gaze-cell").forEach(el => {
-            if (!el.classList.contains("gaze-center")) el.classList.remove("active");
-          });
+          document.querySelectorAll(".gaze-cell").forEach(el => el.classList.remove("active"));
           const safeLabel = label.replace(/\s+/g, "-").toLowerCase();
           const activeCell = document.getElementById(`gaze-cell-${safeLabel}`);
           if (activeCell) activeCell.classList.add("active");
         }
 
-        // Global alert (drowsiness)
         if (task === "drowsiness" && isAlert) globalAlert = true;
       });
 
-      // Alert banner
       const banner = document.getElementById("alert-banner");
+      const hudAlertEl = document.getElementById("hud-alert-lvl");
+      
       if (globalAlert) {
         if (!banner.classList.contains("active")) {
           banner.classList.add("active");
           logAlert("DROWSINESS DETECTED", "danger");
           alertCount++;
           document.getElementById("alert-count").textContent = alertCount;
+          hudAlertEl.textContent = "CRITICAL";
+          hudAlertEl.style.color = "var(--danger)";
         }
       } else {
         banner.classList.remove("active");
+        hudAlertEl.textContent = "CLEAR";
+        hudAlertEl.style.color = "var(--success)";
       }
 
-      // Yawn + eyes closed secondary alerts
       const yawn = predictions["yawn"];
       const eye = predictions["eye_state"];
-      if (yawn?.label === "Yawning" && yawn.confidence > 0.7) {
-        logAlert("Yawning detected", "warn");
-      }
-      if (eye?.label === "Closed" && eye.confidence > 0.8) {
-        logAlert("Eyes closed", "warn");
-      }
+      if (yawn?.label === "Yawning" && yawn.confidence > 0.7) logAlert("Yawning detected", "warn");
+      if (eye?.label === "Closed" && eye.confidence > 0.8) logAlert("Eyes closed", "warn");
 
-      // Activity alert (skip "None" and "Seatbelt")
       const act = predictions["activity"];
-      if (act && act.label !== "None" && act.label !== "Seatbelt" && act.confidence > 0.65) {
-        logAlert(`Activity: ${act.label}`, "warn");
-      }
+      if (act && act.label !== "None" && act.label !== "Seatbelt" && act.confidence > 0.65) logAlert(`Behavior: ${act.label}`, "warn");
 
-      // Distraction alert
       const dist = predictions["distraction"];
       if (dist?.label === "Distracted" && dist.confidence > 0.6) {
-        const actLabel = act?.label && act.label !== "None" ? ` [${act.label}]` : "";
+        const actLabel = act?.label && act.label !== "None" ? ` (${act.label})` : "";
         logAlert(`Distracted${actLabel}`, "danger");
       }
 
-      // Minor driver alert
       const age = predictions["age"];
-      if (age?.label === "Minor" && age.confidence > 0.55) {
-        logAlert("MINOR DETECTED", "danger");
-      }
+      if (age?.label === "Minor" && age.confidence > 0.55) logAlert("Underage detection tripped", "danger");
 
-      // ── Audio Alert Logic ──
+      // Audio Hud Update
+      const hudAudio = document.getElementById("hud-audio");
       if (audio && audio.active) {
-        const level = audio.level; // WARNING / ALERT / CRITICAL
+        hudAudio.textContent = "DETECTED";
+        hudAudio.style.color = "var(--warning)";
+        const level = audio.level;
         const label = audio.yamnet_label;
         const kw = audio.keyword;
         const score = audio.fusion_score;
-
         let msg = `Audio: ${label}`;
         if (kw) msg += ` | KW: ${kw}`;
-
         const logType = (level === "CRITICAL" || level === "ALERT") ? "danger" : "warn";
-
-        // Specific high-risk audio triggers
         if (level === "CRITICAL" || score > 0.8) {
           logAlert(`CRITICAL AUDIO: ${label}`, "danger");
         } else {
           logAlert(msg, logType);
         }
+      } else {
+        hudAudio.textContent = "IDLE";
+        hudAudio.style.color = "var(--text-secondary)";
       }
     }
 
-    // ── Alert log ────────────────────────────────────────────────
+    // ── Alert Log ────────────────────────────────────────────────
     const _loggedAlerts = new Set();
-    let _logClear = 0;
-
     function logAlert(msg, level = "warn") {
-      const key = `${msg}-${Math.floor(Date.now() / 3000)}`; // dedupe per 3s
+      const key = `${msg}-${Math.floor(Date.now() / 3000)}`;
       if (_loggedAlerts.has(key)) return;
       _loggedAlerts.add(key);
 
       const list = document.getElementById("alert-list");
-
-      // Remove placeholder text
-      if (list.children.length === 1 &&
-        list.children[0].tagName !== "DIV".toUpperCase() === false &&
-        list.children[0].style.color) {
+      if (list.children.length === 1 && list.textContent.includes("Awaiting")) {
         list.innerHTML = "";
       }
-
-      const time = new Date().toLocaleTimeString("en-US", { hour12: false });
+      const time = new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
       const item = document.createElement("div");
       item.className = `alert-item ${level}`;
-      item.textContent = `${time}  ${msg}`;
+      item.innerHTML = `<span style="font-family:'JetBrains Mono'; color:var(--text-secondary); font-weight:600;">${time}</span> <span>${msg}</span>`;
       list.prepend(item);
-
-      // Keep max 6 items
       while (list.children.length > 6) list.lastChild.remove();
     }
 
-    // ── Uptime counter ───────────────────────────────────────────
+    // ── Logic Loop (Counters, Status, SSE, Audio poll) ──────────
     setInterval(() => {
       const s = Math.floor((Date.now() - startTime) / 1000);
       const m = Math.floor(s / 60);
-      document.getElementById("uptime").textContent =
-        m > 0 ? `${m}m ${s % 60}s` : `${s}s`;
+      document.getElementById("uptime").textContent = m > 0 ? `${m}m ${s % 60}s` : `${s}s`;
     }, 1000);
 
-    // ── Status polling ───────────────────────────────────────────
     async function checkStatus() {
       try {
         const r = await fetch("/status");
         const data = await r.json();
-
         const modelDot = document.getElementById("model-dot");
-        const modelStat = document.getElementById("model-status");
         const camDot = document.getElementById("cam-dot");
-        const camStat = document.getElementById("cam-status");
         const demoTag = document.getElementById("demo-tag");
 
         if (data.model_loaded) {
           modelDot.className = "dot live";
-          modelStat.textContent = "Model OK";
+          document.getElementById("model-status").textContent = "Neural Engine OK";
         } else {
           modelDot.className = "dot warn";
-          modelStat.textContent = "Demo Mode";
+          document.getElementById("model-status").textContent = "Demo Mode";
           demoTag.style.display = "block";
-          demoMode = true;
         }
-
         if (data.camera_ok) {
           camDot.className = "dot live";
-          camStat.textContent = "Camera Live";
+          document.getElementById("cam-status").textContent = "Cam Ready";
         } else {
           camDot.className = "dot dead";
-          camStat.textContent = "No Camera";
+          document.getElementById("cam-status").textContent = "Off";
         }
-      } catch (e) {
-        console.warn("Status check failed", e);
-      }
+      } catch (e) { console.warn(e); }
     }
 
-    // ── SSE — Server-Sent Events (better than polling) ───────────
     function connectSSE() {
       const evtSource = new EventSource("/predictions");
-
-      evtSource.onopen = () => {
-        document.getElementById("conn-overlay").classList.add("hidden");
-      };
-
+      evtSource.onopen = () => document.getElementById("conn-overlay").classList.add("hidden");
       evtSource.onmessage = (e) => {
         const { predictions, fps, audio } = JSON.parse(e.data);
         updateUI(predictions, fps, audio);
       };
-
       evtSource.onerror = () => {
-        // Browser auto-reconnects SSE — just show overlay briefly
         setTimeout(() => {
           if (evtSource.readyState === EventSource.CLOSED) {
             document.getElementById("conn-overlay").classList.remove("hidden");
@@ -2084,97 +831,11 @@
       const audioSource = new EventSource("/audio_events");
       audioSource.onmessage = (e) => {
         const ev = JSON.parse(e.data);
-        // ev: {ts, level, score, label, kw, text}
         let msg = `[Audio] ${ev.label}`;
         if (ev.kw) msg += ` (KW: ${ev.kw})`;
-        if (ev.text) msg += ` "${ev.text}"`;
-
         const type = (ev.level === "CRITICAL" || ev.level === "ALERT") ? "danger" : "warn";
         logAlert(msg, type);
       };
-    }
-
-    // ── Voice results poller ──────────────────────────────────
-    function updateVoicePanel(data) {
-      const dot = document.getElementById("voice-dot");
-      const tBox = document.getElementById("transcript-box");
-      const kwEl = document.getElementById("voice-keyword");
-      const bertEl = document.getElementById("voice-bert");
-      const textRiskEl = document.getElementById("voice-text-risk");
-      const riskEl = document.getElementById("voice-risk-score");
-      const riskBar = document.getElementById("voice-risk-bar");
-      const badgeEl = document.getElementById("voice-alert-badge");
-      const latEl = document.getElementById("voice-latency");
-
-      // Active dot
-      if (data.active) {
-        dot.classList.add("active");
-      } else {
-        dot.classList.remove("active");
-      }
-
-      // Transcript
-      if (data.transcript) {
-        tBox.textContent = `"${data.transcript}"`;
-        tBox.style.color = "var(--accent)";
-        tBox.style.borderColor = "rgba(0,229,160,0.3)";
-        setTimeout(() => {
-          tBox.style.color = "var(--accent2)";
-          tBox.style.borderColor = "rgba(0,170,255,0.1)";
-        }, 1500);
-      }
-
-      // Keyword
-      if (data.keyword) {
-        kwEl.textContent = `${data.keyword} (${(data.keyword_score || 0).toFixed(2)})`;
-        kwEl.style.color = "var(--warn)";
-      } else {
-        kwEl.textContent = "—";
-        kwEl.style.color = "var(--accent2)";
-      }
-
-      // Speaker ID
-      const spkEl = document.getElementById("voice-speaker");
-      const spkId = data.speaker || "—";
-      const spkScore = (data.speaker_score || 0).toFixed(2);
-      if (spkId && spkId !== "—" && spkId !== "UNKNOWN") {
-        spkEl.textContent = `${spkId} (${spkScore})`;
-        spkEl.style.color = spkId === "DRIVER" ? "var(--accent)" : "var(--warn)";
-      } else if (spkId === "UNKNOWN") {
-        spkEl.textContent = `UNKNOWN (${spkScore})`;
-        spkEl.style.color = "var(--text-dim)";
-      } else {
-        spkEl.textContent = "—";
-        spkEl.style.color = "var(--text-dim)";
-      }
-
-      // BERT
-      const bLabel = data.bert_label || "NEUTRAL";
-      const bScore = (data.bert_score || 0).toFixed(2);
-      bertEl.textContent = `${bLabel} (${bScore})`;
-      bertEl.style.color = bLabel === "NEGATIVE" ? "var(--danger)" :
-        bLabel === "POSITIVE" ? "var(--accent)" : "var(--text-dim)";
-
-      // Text risk
-      textRiskEl.textContent = (data.text_risk || 0).toFixed(3);
-
-      // Fusion risk
-      const risk = data.fusion_score || 0;
-      riskEl.textContent = risk.toFixed(3);
-      const riskPct = Math.min(risk * 100, 100);
-      riskBar.style.width = `${riskPct}%`;
-      riskBar.className = "risk-bar" +
-        (risk >= 0.85 ? " critical" : risk >= 0.60 ? " danger" : risk >= 0.35 ? " warn" : "");
-
-      // Alert badge
-      const level = (data.level || "NONE").toLowerCase();
-      badgeEl.textContent = data.level || "NONE";
-      badgeEl.className = `alert-badge ${level}`;
-
-      // Latency
-      if (data.latency_ms > 0) {
-        latEl.textContent = `${data.latency_ms.toFixed(0)}ms`;
-      }
     }
 
     let _lastVoicePayload = "";
@@ -2183,93 +844,59 @@
         const r = await fetch("/voice_results");
         const data = await r.json();
         const payload = JSON.stringify(data);
-        if (payload !== _lastVoicePayload) {
-          _lastVoicePayload = payload;
-          updateVoicePanel(data);
+        if (payload === _lastVoicePayload) return;
+        _lastVoicePayload = payload;
+
+        const tBox = document.getElementById("transcript-box");
+        if (data.transcript) {
+          tBox.textContent = `"${data.transcript}"`;
+          tBox.style.color = "var(--text-primary)";
+          tBox.style.fontWeight = "600";
         }
-      } catch (e) {
-        // ignore fetch errors
-      }
+        
+        document.getElementById("voice-keyword").textContent = data.keyword ? `${data.keyword} (${(data.keyword_score || 0).toFixed(2)})` : "—";
+        const spkEl = document.getElementById("voice-speaker");
+        spkEl.textContent = data.speaker ? `${data.speaker} (${(data.speaker_score || 0).toFixed(2)})` : "—";
+        
+        const bertEl = document.getElementById("voice-bert");
+        const bLabel = data.bert_label || "NEUTRAL";
+        bertEl.textContent = `${bLabel} (${(data.bert_score || 0).toFixed(2)})`;
+        bertEl.style.color = bLabel === "NEGATIVE" ? "var(--danger)" : bLabel === "POSITIVE" ? "var(--success)" : "var(--text-primary)";
+
+        const risk = data.fusion_score || 0;
+        document.getElementById("voice-risk-score").textContent = risk.toFixed(3);
+        const riskBar = document.getElementById("voice-risk-bar");
+        riskBar.style.width = `${Math.min(risk * 100, 100)}%`;
+        riskBar.className = "progress-line " + (risk >= 0.7 ? "danger" : risk >= 0.35 ? "warn" : "");
+
+        const badgeEl = document.getElementById("voice-alert-badge");
+        badgeEl.textContent = `LEVEL: ${data.level || "NONE"}`;
+        badgeEl.className = `badge ${(data.level || "none").toLowerCase()}`;
+
+        if (data.latency_ms > 0) document.getElementById("voice-latency").textContent = `${Math.round(data.latency_ms)}ms`;
+      } catch (e) {}
     }
 
-    // ── Enrollment Modal Logic ────────────────────────────────
+    // ── Enrollment JS Integration ─────────────────────────────────
     let enrolPollTimer = null;
 
-    function openEnrolModal() {
-      document.getElementById("enrol-overlay").classList.add("visible");
-      document.getElementById("driver-name-input").focus();
-    }
-
-    function closeEnrolModal() {
-      document.getElementById("enrol-overlay").classList.remove("visible");
-      if (enrolPollTimer) { clearInterval(enrolPollTimer); enrolPollTimer = null; }
-    }
-
-    function resetEnrolModal() {
-      if (enrolPollTimer) { clearInterval(enrolPollTimer); enrolPollTimer = null; }
-      setEnrolStep(1);
-      document.getElementById("enrol-ring").style.strokeDashoffset = "326.73";
-      document.getElementById("enrol-pct").textContent = "0%";
-      document.getElementById("enrol-phase-label").textContent = "Waiting";
-      document.getElementById("enrol-status-msg").textContent = "Speak clearly into the microphone";
-      document.getElementById("enrol-begin-btn").disabled = false;
-    }
+    function openEnrolModal() { document.getElementById("enrol-overlay").classList.add("visible"); document.getElementById("driver-name-input").focus(); }
+    function closeEnrolModal() { document.getElementById("enrol-overlay").classList.remove("visible"); if (enrolPollTimer) { clearInterval(enrolPollTimer); enrolPollTimer = null; } }
 
     function setEnrolStep(step) {
-      // Update dots
-      for (let i = 1; i <= 3; i++) {
-        const dot = document.getElementById(`edot-${i}`);
-        const lbl = document.getElementById(`elbl-${i}`);
-        const content = document.getElementById(`estep-${i}`);
-        dot.classList.remove("active", "done");
-        lbl.classList.remove("active");
-        content.classList.remove("active");
-
-        if (i < step) {
-          dot.classList.add("done");
-          dot.innerHTML = "✓";
-        } else if (i === step) {
-          dot.classList.add("active");
-          lbl.classList.add("active");
-          content.classList.add("active");
-          dot.innerHTML = i;
-        } else {
-          dot.innerHTML = i;
-        }
-      }
-      // Update lines
-      document.getElementById("eline-1").classList.toggle("done", step > 1);
-      document.getElementById("eline-2").classList.toggle("done", step > 2);
+      for(let i=1; i<=3; i++) { document.getElementById(`estep-${i}`).style.display = (i === step ? "block" : "none"); }
     }
 
     async function startEnrolment() {
-      const nameInput = document.getElementById("driver-name-input");
-      const driverName = nameInput.value.trim() || "Driver";
-      const btn = document.getElementById("enrol-begin-btn");
-      btn.disabled = true;
-
-      // Move to step 2
+      const driverName = document.getElementById("driver-name-input").value.trim() || "Driver";
+      document.getElementById("enrol-begin-btn").disabled = true;
       setEnrolStep(2);
-
       try {
-        const r = await fetch("/audio_enrol", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ seconds: 5, driver_name: driverName })
-        });
+        const r = await fetch("/audio_enrol", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ seconds: 5, driver_name: driverName }) });
         const data = await r.json();
-
-        if (!data.ok) {
-          showEnrolResult(false, "Enrollment Failed", data.msg || "Audio pipeline not available");
-          return;
-        }
-
-        // Poll enrollment status
-        enrolPollTimer = setInterval(pollEnrolStatus, 300);
-
-      } catch (e) {
-        showEnrolResult(false, "Connection Error", "Could not reach the server");
-      }
+        if (!data.ok) { showEnrolResult(false, "Error", data.msg); return; }
+        enrolPollTimer = setInterval(pollEnrolStatus, 400);
+      } catch (e) { showEnrolResult(false, "Conn Error", "Check network."); }
     }
 
     async function pollEnrolStatus() {
@@ -2277,349 +904,181 @@
         const r = await fetch("/enrol_status");
         const data = await r.json();
         const ring = document.getElementById("enrol-ring");
-        const pctEl = document.getElementById("enrol-pct");
-        const phaseEl = document.getElementById("enrol-phase-label");
-        const msgEl = document.getElementById("enrol-status-msg");
-
-        const circumference = 326.73;
         const pct = data.progress || 0;
-        ring.style.strokeDashoffset = circumference - (circumference * pct / 100);
-        pctEl.textContent = `${pct}%`;
+        const circ = 282.7; 
+        ring.style.strokeDashoffset = circ - (circ * pct / 100);
+        document.getElementById("enrol-pct").textContent = `${pct}%`;
+        document.getElementById("enrol-phase-label").textContent = data.phase.toUpperCase();
 
-        if (data.phase === "recording") {
-          phaseEl.textContent = "Recording";
-          msgEl.textContent = data.message || "Speak clearly…";
-        } else if (data.phase === "processing") {
-          phaseEl.textContent = "Processing";
-          msgEl.textContent = "Creating voiceprint…";
-        } else if (data.phase === "done") {
+        if (data.phase === "done") {
           clearInterval(enrolPollTimer);
-          enrolPollTimer = null;
-          ring.style.strokeDashoffset = "0";
-          pctEl.textContent = "100%";
           setTimeout(() => {
-            showEnrolResult(true, "Enrollment Complete",
-              `Driver voiceprint for "${data.driver_name || 'Driver'}" saved successfully.\nSpeech will now be attributed to this driver.`);
+            showEnrolResult(true, "Enrolled", `Voice ID setup complete for ${data.driver_name}`);
             updateSpeakerBadge(true, data.driver_name);
-          }, 400);
+          }, 300);
         } else if (data.phase === "error") {
           clearInterval(enrolPollTimer);
-          enrolPollTimer = null;
-          showEnrolResult(false, "Enrollment Failed", data.message || "Unknown error");
+          showEnrolResult(false, "Failed", data.message);
         }
-      } catch (e) {
-        // ignore transient fetch errors
-      }
+      } catch (e) {}
     }
 
     function showEnrolResult(success, title, msg) {
       setEnrolStep(3);
-      const icon = document.getElementById("enrol-result-icon");
-      icon.className = `enrol-result-icon ${success ? "success" : "error"}`;
-      icon.textContent = success ? "✓" : "✕";
       document.getElementById("enrol-result-title").textContent = title;
-      document.getElementById("enrol-result-msg").innerHTML = msg.replace(/\n/g, "<br>");
+      document.getElementById("enrol-result-msg").textContent = msg;
     }
 
     function updateSpeakerBadge(enrolled, name) {
       const badge = document.getElementById("speaker-badge");
-      const text = document.getElementById("speaker-badge-text");
+      const txt = document.getElementById("speaker-badge-text");
       if (enrolled) {
         badge.classList.add("enrolled");
-        text.textContent = `🎤 ${name || "DRIVER"}`;
-      } else {
-        badge.classList.remove("enrolled");
-        text.textContent = "NOT ENROLLED";
+        txt.textContent = name;
+        // Also Update visual display in header
+        document.getElementById("active-driver-display").textContent = name;
       }
     }
 
-    // Check speaker status on startup and periodically
     async function checkSpeakerStatus() {
       try {
         const r = await fetch("/status");
-        const data = await r.json();
-        if (data.speaker && data.speaker.enrolled) {
-          updateSpeakerBadge(true, data.speaker?.driver_name || "DRIVER");
-        }
-      } catch (e) { /* ignore */ }
+        const d = await r.json();
+        if (d.speaker?.enrolled) updateSpeakerBadge(true, "Driver Verified");
+      } catch(e){}
     }
-    let enrolState_driverName = null;
 
-    // ── Init ─────────────────────────────────────────────────────
-    buildSidebar();
-    checkStatus();
-    setInterval(checkStatus, 10000);
-    connectSSE();
-    connectAudioSSE();
-    setInterval(pollVoiceResults, 500);
-    checkSpeakerStatus();
-
-    // Enter key in name input starts enrollment
-    document.getElementById("driver-name-input").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") startEnrolment();
-    });
-
-    // ── Face Enrollment Modal Logic ────────────────────────────
+    // ── Face Verification Logic ───────────────────────────────────
     let facePollTimer = null;
     let faceVerifyPollTimer = null;
     let faceVerifyActive = false;
-    let faceEnrolledName = null;
 
-    function openFaceEnrolModal() {
-      document.getElementById("face-enrol-overlay").classList.add("visible");
-      document.getElementById("face-driver-name-input").focus();
-    }
-
-    function closeFaceEnrolModal() {
-      document.getElementById("face-enrol-overlay").classList.remove("visible");
-      if (facePollTimer) { clearInterval(facePollTimer); facePollTimer = null; }
-    }
-
-    function resetFaceEnrolModal() {
-      if (facePollTimer) { clearInterval(facePollTimer); facePollTimer = null; }
-      setFaceEnrolStep(1);
-      document.getElementById("face-enrol-ring").style.strokeDashoffset = "326.73";
-      document.getElementById("face-enrol-pct").textContent = "0%";
-      document.getElementById("face-enrol-phase-label").textContent = "Waiting";
-      document.getElementById("face-enrol-status-msg").textContent = "Look at the camera steadily";
-      document.getElementById("face-enrol-begin-btn").disabled = false;
-    }
+    function openFaceEnrolModal() { document.getElementById("face-enrol-overlay").classList.add("visible"); }
+    function closeFaceEnrolModal() { document.getElementById("face-enrol-overlay").classList.remove("visible"); }
 
     function setFaceEnrolStep(step) {
-      for (let i = 1; i <= 3; i++) {
-        const dot = document.getElementById(`fdot-${i}`);
-        const lbl = document.getElementById(`flbl-${i}`);
-        const content = document.getElementById(`fstep-${i}`);
-        dot.classList.remove("active", "done");
-        lbl.classList.remove("active");
-        content.classList.remove("active");
-
-        if (i < step) {
-          dot.classList.add("done");
-          dot.innerHTML = "✓";
-        } else if (i === step) {
-          dot.classList.add("active");
-          lbl.classList.add("active");
-          content.classList.add("active");
-          dot.innerHTML = i;
-        } else {
-          dot.innerHTML = i;
-        }
-      }
-      document.getElementById("fline-1").classList.toggle("done", step > 1);
-      document.getElementById("fline-2").classList.toggle("done", step > 2);
+      for(let i=1; i<=3; i++) { document.getElementById(`fstep-${i}`).style.display = (i === step ? "block" : "none"); }
     }
 
     async function startFaceEnrolment() {
-      const nameInput = document.getElementById("face-driver-name-input");
-      const driverName = nameInput.value.trim() || "Driver";
-      const btn = document.getElementById("face-enrol-begin-btn");
-      btn.disabled = true;
-
+      const name = document.getElementById("face-driver-name-input").value.trim() || "Driver";
       setFaceEnrolStep(2);
-
       try {
-        const r = await fetch("/face_enrol", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ driver_name: driverName })
-        });
-        const data = await r.json();
-
-        if (!data.ok) {
-          showFaceEnrolResult(false, "Enrollment Failed", data.msg || "Face module not available");
-          return;
-        }
-
-        facePollTimer = setInterval(pollFaceEnrolStatus, 400);
-
-      } catch (e) {
-        showFaceEnrolResult(false, "Connection Error", "Could not reach the server");
-      }
+        const r = await fetch("/face_enrol", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ driver_name: name }) });
+        facePollTimer = setInterval(pollFaceEnrolStatus, 500);
+      } catch(e){}
     }
 
     async function pollFaceEnrolStatus() {
       try {
         const r = await fetch("/face_enrol_status");
-        const data = await r.json();
+        const d = await r.json();
         const ring = document.getElementById("face-enrol-ring");
-        const pctEl = document.getElementById("face-enrol-pct");
-        const phaseEl = document.getElementById("face-enrol-phase-label");
-        const msgEl = document.getElementById("face-enrol-status-msg");
-
-        const circumference = 326.73;
-        const pct = data.progress || 0;
-        ring.style.strokeDashoffset = circumference - (circumference * pct / 100);
-        pctEl.textContent = `${pct}%`;
-
-        if (data.phase === "capturing") {
-          phaseEl.textContent = "Capturing";
-          msgEl.textContent = data.message || "Looking for face…";
-        } else if (data.phase === "processing") {
-          phaseEl.textContent = "Processing";
-          msgEl.textContent = "Running liveness check…";
-        } else if (data.phase === "done") {
+        const circ = 282.7;
+        ring.style.strokeDashoffset = circ - (circ * d.progress / 100);
+        document.getElementById("face-enrol-pct").textContent = `${d.progress}%`;
+        
+        if (d.phase === "done") {
           clearInterval(facePollTimer);
-          facePollTimer = null;
-          ring.style.strokeDashoffset = "0";
-          pctEl.textContent = "100%";
-          faceEnrolledName = data.driver_name;
-          setTimeout(() => {
-            showFaceEnrolResult(true, "Face Enrolled",
-              `Face embedding for "${data.driver_name || 'Driver'}" saved successfully.\nFace verification is now available.`);
-            updateFaceBadge(true, data.driver_name);
-          }, 400);
-        } else if (data.phase === "error") {
+          setFaceEnrolStep(3);
+          document.getElementById("face-badge").classList.add("enrolled");
+          document.getElementById("face-badge-text").textContent = d.driver_name || "Verified Face";
+          document.getElementById("active-driver-display").textContent = d.driver_name || "Active Driver";
+        } else if (d.phase === "error") {
           clearInterval(facePollTimer);
-          facePollTimer = null;
-          showFaceEnrolResult(false, "Enrollment Failed", data.message || "Unknown error");
+          setFaceEnrolStep(3);
+          document.getElementById("face-enrol-result-title").textContent = "Failed";
+          document.getElementById("face-enrol-result-msg").textContent = d.message;
         }
-      } catch (e) {
-        // ignore transient fetch errors
-      }
+      } catch(e){}
     }
 
-    function showFaceEnrolResult(success, title, msg) {
-      setFaceEnrolStep(3);
-      const icon = document.getElementById("face-enrol-result-icon");
-      icon.className = `enrol-result-icon ${success ? "success" : "error"}`;
-      icon.textContent = success ? "✓" : "✕";
-      document.getElementById("face-enrol-result-title").textContent = title;
-      document.getElementById("face-enrol-result-msg").innerHTML = msg.replace(/\n/g, "<br>");
-    }
-
-    function updateFaceBadge(enrolled, name) {
-      const badge = document.getElementById("face-badge");
-      const text = document.getElementById("face-badge-text");
-      if (enrolled) {
-        badge.classList.add("enrolled");
-        text.textContent = `🔒 ${name || "DRIVER"}`;
-      } else {
-        badge.classList.remove("enrolled");
-        text.textContent = "🔒 NO FACE";
-      }
-    }
-
-    // ── Face Verify Toggle ───────────────────────────────────────
     async function toggleFaceVerify() {
       const btn = document.getElementById("face-verify-toggle-btn");
-
       if (faceVerifyActive) {
-        // Stop
-        try { await fetch("/face_verify_stop", { method: "POST" }); } catch (e) { }
+        try { await fetch("/face_verify_stop", { method: "POST" }); } catch(e){}
         faceVerifyActive = false;
         btn.classList.remove("active");
-        btn.textContent = "▶ START FACE VERIFY";
-        if (faceVerifyPollTimer) { clearInterval(faceVerifyPollTimer); faceVerifyPollTimer = null; }
+        btn.textContent = "▶ START IDENTITY VERIFY";
         document.getElementById("face-verify-dot").classList.remove("active");
+        clearInterval(faceVerifyPollTimer);
         return;
       }
-
-      // Determine which name to verify
-      const name = faceEnrolledName || document.getElementById("face-driver-name-input").value.trim() || "Driver";
-
       try {
-        const r = await fetch("/face_verify_start", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ driver_name: name })
-        });
-        const data = await r.json();
-
-        if (!data.ok) {
-          alert(data.msg || "Cannot start face verification");
-          return;
-        }
-
+        await fetch("/face_verify_start", { method: "POST", body: JSON.stringify({ driver_name: "Driver" }) });
         faceVerifyActive = true;
         btn.classList.add("active");
-        btn.textContent = "■ STOP FACE VERIFY";
+        btn.textContent = "■ STOP VERIFY SCAN";
         document.getElementById("face-verify-dot").classList.add("active");
         faceVerifyPollTimer = setInterval(pollFaceVerifyStatus, 600);
-
-      } catch (e) {
-        alert("Could not reach the server");
-      }
+      } catch(e){}
     }
 
     async function pollFaceVerifyStatus() {
       try {
         const r = await fetch("/face_verify_status");
-        const data = await r.json();
+        const d = await r.json();
+        const badge = document.getElementById("face-match-badge");
+        
+        document.getElementById("face-similarity").textContent = d.similarity ? d.similarity.toFixed(3) : "—";
+        document.getElementById("face-liveness").textContent = d.liveness_label || "—";
+        
+        const bar = document.getElementById("face-sim-bar");
+        const p = d.similarity * 100;
+        bar.style.width = `${p}%`;
+        bar.style.background = d.match ? "var(--success)" : "var(--accent)";
 
-        const badgeEl = document.getElementById("face-match-badge");
-        const simEl = document.getElementById("face-similarity");
-        const liveEl = document.getElementById("face-liveness");
-        const simBar = document.getElementById("face-sim-bar");
-        const dot = document.getElementById("face-verify-dot");
-
-        if (!data.active) {
-          // Verify stopped remotely
-          faceVerifyActive = false;
-          const btn = document.getElementById("face-verify-toggle-btn");
-          btn.classList.remove("active");
-          btn.textContent = "▶ START FACE VERIFY";
-          dot.classList.remove("active");
-          if (faceVerifyPollTimer) { clearInterval(faceVerifyPollTimer); faceVerifyPollTimer = null; }
-          return;
-        }
-
-        // Similarity
-        simEl.textContent = data.similarity ? data.similarity.toFixed(3) : "—";
-        const simPct = Math.min(Math.max(data.similarity * 100, 0), 100);
-        simBar.style.width = `${simPct}%`;
-        simBar.className = "risk-bar" +
-          (data.match ? "" : data.similarity > 0.3 ? " warn" : simPct === 0 ? "" : " danger");
-
-        // Liveness
-        liveEl.textContent = data.liveness_label || "—";
-        if (data.liveness_label && data.liveness_label.startsWith("REAL")) {
-          liveEl.style.color = "var(--accent)";
-        } else if (data.liveness_label && data.liveness_label.startsWith("SPOOF")) {
-          liveEl.style.color = "var(--danger)";
+        if (d.liveness_label === "No Face") {
+          badge.textContent = "NO FACE"; badge.style.color = "var(--text-secondary)";
+        } else if (d.match) {
+          badge.textContent = "MATCH CONFIRMED"; badge.style.color = "var(--success)";
+          if (d.driver_name) document.getElementById("active-driver-display").textContent = d.driver_name;
         } else {
-          liveEl.style.color = "var(--text-dim)";
+          badge.textContent = "UNRECOGNIZED"; badge.style.color = "var(--warning)";
         }
-
-        // Match badge
-        if (data.liveness_label === "No Face") {
-          badgeEl.textContent = "NO FACE";
-          badgeEl.className = "face-match-badge noface";
-        } else if (data.liveness_label && data.liveness_label.startsWith("SPOOF")) {
-          badgeEl.textContent = "SPOOF";
-          badgeEl.className = "face-match-badge spoof";
-        } else if (data.match) {
-          badgeEl.textContent = `MATCH (${data.driver_name || ""})`;
-          badgeEl.className = "face-match-badge match";
-        } else {
-          badgeEl.textContent = "NO MATCH";
-          badgeEl.className = "face-match-badge nomatch";
-        }
-
-      } catch (e) {
-        // ignore
-      }
+      } catch(e){}
     }
 
-    // Check face status on startup
-    async function checkFaceStatus() {
+    // ── Bootstrap Init ──────────────────────────────────────────
+    buildSidebar();
+    checkStatus();
+    setInterval(checkStatus, 8000);
+    connectSSE();
+    connectAudioSSE();
+    setInterval(pollVoiceResults, 500);
+    checkSpeakerStatus();
+    
+    // Start-up fetch of face data
+    async function getFaceData() {
       try {
         const r = await fetch("/face_status");
-        const data = await r.json();
-        if (data.enrolled && data.enrolled_names && data.enrolled_names.length > 0) {
-          faceEnrolledName = data.enrolled_names[0];
-          updateFaceBadge(true, faceEnrolledName);
+        const d = await r.json();
+        if (d.enrolled && d.enrolled_names.length > 0) {
+          document.getElementById("face-badge").classList.add("enrolled");
+          document.getElementById("face-badge-text").textContent = d.enrolled_names[0];
+          document.getElementById("active-driver-display").textContent = d.enrolled_names[0];
         }
-      } catch (e) { /* ignore */ }
+      } catch(e){}
+    }
+    getFaceData();
+
+    // ── Tab Navigation Script ──────────────────────────────────────
+    function switchTab(tabName) {
+      // Set all panes to hidden
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+      // Set all buttons inactive
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      
+      // Activate targeted elements
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+      
+      // Map logic to match the click sender button
+      const btns = document.querySelectorAll('.tab-btn');
+      if(tabName === 'vision') btns[0].classList.add('active');
+      else if(tabName === 'speech') btns[1].classList.add('active');
+      else if(tabName === 'face') btns[2].classList.add('active');
     }
 
-    checkFaceStatus();
-
-    // Enter key in face name input starts face enrollment
-    document.getElementById("face-driver-name-input").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") startFaceEnrolment();
-    });
   </script>
 </body>
-
 </html>

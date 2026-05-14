@@ -105,10 +105,10 @@ pip install onnxruntime-gpu
 # DMS_vision-Audio
 
 
-
+<!-- 
 since it able to seperate the echo (i know the user voice is not able to clear listen )  but i think our goal is achive. since our goal is to get tregier when the user voice listen than stt process suspen and wait 300ms most and than start listenig our tts .what do you think are we on right track ?# Driver-Monitoring-System-v1
 # Driver-Monitoring-System-v1
 # Driver-Monitoring-System-v1
 # Driver-Monitoring-System-v1
 # Driver-Monitoring-System-v1
-# Driver-Monitoring-System-v1
+# Driver-Monitoring-System-v1 -->
