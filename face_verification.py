@@ -291,38 +291,38 @@ def verify_mode(app, name, threshold=0.45, camera_id=0, debug=False):
     cv2.destroyAllWindows()
 
 
-# def main():
-#     parser = argparse.ArgumentParser(
-#         description="Face Pipeline: Texture Liveness + InsightFace Recognition")
-#     parser.add_argument("--mode",      required=True, choices=["enroll", "verify"])
-#     parser.add_argument("--name",      required=True, help="User name")
-#     parser.add_argument("--threshold", type=float, default=0.45)
-#     parser.add_argument("--camera_id", type=int,   default=0)
-#     parser.add_argument("--cpu",       action="store_true")
-#     parser.add_argument("--debug",     action="store_true",
-#                         help="Print per-signal liveness scores to terminal")
-#     args = parser.parse_args()
+def main():
+    parser = argparse.ArgumentParser(
+        description="Face Pipeline: Texture Liveness + InsightFace Recognition")
+    parser.add_argument("--mode",      required=True, choices=["enroll", "verify"])
+    parser.add_argument("--name",      required=True, help="User name")
+    parser.add_argument("--threshold", type=float, default=0.45)
+    parser.add_argument("--camera_id", type=int,   default=0)
+    parser.add_argument("--cpu",       action="store_true")
+    parser.add_argument("--debug",     action="store_true",
+                        help="Print per-signal liveness scores to terminal")
+    args = parser.parse_args()
 
-#     print_pipeline()
-#     print("=" * 60)
-#     print(f"Mode      : {args.mode}")
-#     print(f"Name      : {args.name}")
-#     print(f"Threshold : {args.threshold}")
-#     print(f"Camera    : {args.camera_id}")
-#     print(f"Device    : {'CPU' if args.cpu else 'GPU'}")
-#     print("=" * 60)
+    print_pipeline()
+    print("=" * 60)
+    print(f"Mode      : {args.mode}")
+    print(f"Name      : {args.name}")
+    print(f"Threshold : {args.threshold}")
+    print(f"Camera    : {args.camera_id}")
+    print(f"Device    : {'CPU' if args.cpu else 'GPU'}")
+    print("=" * 60)
 
-#     app = load_recognition_model(cpu=args.cpu)
+    app = load_recognition_model(cpu=args.cpu)
 
-#     if args.mode == "enroll":
-#         enroll_mode(app, args.name,
-#                     camera_id=args.camera_id, debug=args.debug)
-#     elif args.mode == "verify":
-#         verify_mode(app, args.name,
-#                     threshold=args.threshold,
-#                     camera_id=args.camera_id,
-#                     debug=args.debug)
+    if args.mode == "enroll":
+        enroll_mode(app, args.name,
+                    camera_id=args.camera_id, debug=args.debug)
+    elif args.mode == "verify":
+        verify_mode(app, args.name,
+                    threshold=args.threshold,
+                    camera_id=args.camera_id,
+                    debug=args.debug)
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()

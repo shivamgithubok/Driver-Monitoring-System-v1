@@ -13,6 +13,7 @@ JPEG_QUALITY = 80
 
 # ── Vision Model Settings ──
 VISION_MODEL_PATH = "edge_driver_model_distilled.onnx"
+# VISION_MODEL_PATH = "edge_driver_model_fp16.engine"
 IMG_SIZE          = 224
 MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 STD  = np.array([0.229, 0.224, 0.225], dtype=np.float32)
@@ -122,3 +123,5 @@ ONNX_OUTPUT_ORDER = [
     "drowsiness", "gaze", "yawn", "emotion",
     "eye_state", "distraction", "activity", "age",
 ]
+
+USE_TENSORRT = True

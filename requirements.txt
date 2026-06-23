@@ -16,8 +16,8 @@ sounddevice==0.5.5
 librosa==0.11.0
 scikit-learn==1.4.2
 insightface==0.7.3
-
-
+paho-mqtt
+dotenv
 
 # Enroll
 # python test_face.py --mode enroll --name shivam --cpu

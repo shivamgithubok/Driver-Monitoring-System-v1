@@ -7,6 +7,7 @@ from flask import Flask, Response, render_template, jsonify, request
 import os
 import time
 import atexit
+import sqlite3
 from mqtt_integration import (
     init_mqtt, shutdown_mqtt, is_mqtt_enabled,
     publish_vision, publish_audio, publish_alert, 
@@ -64,6 +65,35 @@ latest_audio_result = {
 audio_event_queue = deque(maxlen=50)
 audio_pipeline    = None
 audio_ok          = False
+
+DB_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "dms_data.db")
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS alerts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp REAL,
+                    severity TEXT,
+                    message TEXT,
+                    driver_name TEXT,
+                    type TEXT
+                 )''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+def insert_alert(severity, message, driver_name, alert_type):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('INSERT INTO alerts (timestamp, severity, message, driver_name, type) VALUES (?, ?, ?, ?, ?)',
+                  (time.time(), severity, message, driver_name, alert_type))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"DB Error: {e}")
 
 # Enrollment progress state
 enrol_state = {
@@ -144,6 +174,51 @@ def _on_audio_result(result: "PipelineResult"):
                     )
                 # Always publish audio state
                 publish_audio(latest_audio_result)
+
+            # Update database
+            insert_alert(result.alert_level.name, f"Audio: {result.yamnet_label}", result.speaker_id or "Unknown", "Audio")
+
+def alert_monitor_worker():
+    """Background thread to monitor vision predictions and track alerts/summaries."""
+    prev_drowsy = False
+    prev_yawn = False
+    prev_dist = False
+    
+    while True:
+        try:
+            with vision.state_lock:
+                preds = dict(vision.latest_predictions)
+            with face_lock:
+                d_name = face_verify_state.get("driver_name") or "Unknown"
+            
+            if preds:
+                # Drowsy Check
+                drow = preds.get("drowsiness", {})
+                is_drow = drow.get("label") == "Drowsy" and drow.get("confidence", 0) > 0.60
+                if is_drow and not prev_drowsy:
+                    insert_alert("CRITICAL", "Drowsiness Detected", d_name, "Drowsy")
+                prev_drowsy = is_drow
+
+                # Yawn Check
+                yawn = preds.get("yawn", {})
+                is_yawn = yawn.get("label") == "Yawning" and yawn.get("confidence", 0) > 0.60
+                if is_yawn and not prev_yawn:
+                    insert_alert("WARNING", "Yawning Detected", d_name, "Yawn")
+                prev_yawn = is_yawn
+
+                # Distraction / Phone Check
+                dist = preds.get("activity", {})
+                lbl = dist.get("label", "")
+                is_dist = lbl not in ["Safe Driving", "None", ""] and dist.get("confidence", 0) > 0.60
+                if is_dist and not prev_dist:
+                    a_type = "Phone" if ("Phone" in lbl or "phone" in lbl.lower()) else "Distraction"
+                    insert_alert("WARNING", f"Distraction: {lbl}", d_name, a_type)
+                prev_dist = is_dist
+
+        except Exception as e:
+            logger.error(f"[Alert Monitor] Error: {e}")
+            
+        time.sleep(0.5)
 
 def mqtt_publish_worker():
     """Background thread to publish vision/telemetry to MQTT"""
@@ -306,6 +381,50 @@ def audio_events():
             time.sleep(0.25)
     return Response(event_stream(), mimetype="text/event-stream")
 
+@app.route("/api/alerts")
+def api_alerts():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('SELECT timestamp, severity, message, driver_name, type FROM alerts ORDER BY timestamp DESC LIMIT 100')
+        rows = c.fetchall()
+        conn.close()
+        return jsonify([{"timestamp": r[0], "severity": r[1], "message": r[2], "driver_name": r[3], "type": r[4]} for r in rows])
+    except Exception as e:
+        logger.error(f"DB Fetch Error: {e}")
+        return jsonify([])
+
+@app.route("/api/activity_summary")
+def api_activity_summary():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        # Today's midnight
+        import datetime
+        today_start = datetime.datetime.combine(datetime.date.today(), datetime.time.min).timestamp()
+        c.execute('SELECT type, COUNT(*) FROM alerts WHERE timestamp >= ? GROUP BY type', (today_start,))
+        rows = c.fetchall()
+        conn.close()
+        
+        summary = {"Drowsy": 0, "Yawn": 0, "Phone": 0, "Audio": 0}
+        for t, count in rows:
+            if t in summary:
+                summary[t] += count
+        return jsonify(summary)
+    except Exception as e:
+        logger.error(f"DB Fetch Error: {e}")
+        return jsonify({"Drowsy": 0, "Yawn": 0, "Phone": 0, "Audio": 0})
+
+from flask import send_file
+@app.route("/api/driver_image/<name>")
+def api_driver_image(name):
+    if not FACE_AVAILABLE:
+        return "Face module not available", 404
+    path = os.path.join(PREVIEW_DIR, f"enrolled_{name}.jpg")
+    if os.path.exists(path):
+        return send_file(path, mimetype='image/jpeg')
+    return "Not found", 404
+
 @app.route("/status")
 def status():
     with audio_lock:
@@ -412,7 +531,21 @@ def face_verify_start():
     global face_verify_running
     if not FACE_AVAILABLE: return jsonify({"ok": False}), 503
     data = request.get_json(silent=True) or {}
-    driver_name = data.get("driver_name", "Driver")
+    driver_name = data.get("driver_name") or None
+
+    # Auto-detect enrolled driver if name not provided
+    if not driver_name:
+        try:
+            enrolled = [f.replace(".npy", "") for f in os.listdir(DB_DIR) if f.endswith(".npy")]
+            if enrolled:
+                driver_name = enrolled[0]
+                logger.info(f"Auto-detected enrolled driver: {driver_name}")
+            else:
+                return jsonify({"ok": False, "msg": "No enrolled drivers found. Please enrol first."}), 400
+        except Exception as e:
+            logger.error(f"Could not auto-detect driver name: {e}")
+            return jsonify({"ok": False, "msg": "Could not detect enrolled driver"}), 500
+
     if face_verify_running: return jsonify({"ok": True})
     face_verify_running = True
     def _verify_loop():
@@ -432,7 +565,7 @@ def face_verify_start():
                     with face_lock: face_verify_state.update(active=True, match=False, liveness_label=ll)
                 else:
                     sim, is_match = compare_embeddings(face.embedding, enrolled_emb, 0.45)
-                    with face_lock: face_verify_state.update(active=True, match=is_match, similarity=round(sim,3))
+                    with face_lock: face_verify_state.update(active=True, match=is_match, similarity=round(sim,3), driver_name=driver_name)
                 time.sleep(0.5)
         except Exception as e:
             logger.exception(f"Error in face verification loop: {e}")
@@ -473,6 +606,45 @@ if __name__ == "__main__":
     
     # Start camera thread
     threading.Thread(target=vision.camera_thread, daemon=True).start()
+    
+    # Start alert monitor thread
+    threading.Thread(target=alert_monitor_worker, daemon=True).start()
+    
+    # Auto-start face verification if enrolled driver exists
+    try:
+        if FACE_AVAILABLE and os.path.exists(DB_DIR):
+            enrolled = [f.replace(".npy", "") for f in os.listdir(DB_DIR) if f.endswith(".npy")]
+            if enrolled:
+                driver_name = enrolled[0]
+                face_verify_running = True
+                def _auto_verify_loop():
+                    global face_verify_running
+                    try:
+                        fmodel = _get_face_model()
+                        enrolled_emb = load_embedding(driver_name)
+                        while face_verify_running:
+                            with vision.face_lock: raw = vision.latest_raw_frame
+                            if raw is None: time.sleep(0.3); continue
+                            face = get_largest_face(fmodel, raw)
+                            if face is None:
+                                with face_lock: face_verify_state.update(active=True, match=False, liveness_label="No Face")
+                                time.sleep(0.3); continue
+                            ll, ls, is_real = passive_liveness_check(raw, face.bbox)
+                            if not is_real:
+                                with face_lock: face_verify_state.update(active=True, match=False, liveness_label=ll)
+                            else:
+                                sim, is_match = compare_embeddings(face.embedding, enrolled_emb, 0.45)
+                                with face_lock: face_verify_state.update(active=True, match=is_match, similarity=round(sim,3), driver_name=driver_name)
+                            time.sleep(0.5)
+                    except Exception as e:
+                        logger.exception(f"Error in auto face verification loop: {e}")
+                    finally:
+                        face_verify_running = False
+                        with face_lock: face_verify_state["active"] = False
+                threading.Thread(target=_auto_verify_loop, daemon=True).start()
+                logger.info(f"Auto-started face verification for driver: {driver_name}")
+    except Exception as e:
+        logger.error(f"Could not auto-start face verify: {e}")
     
     # Initialize MQTT from environment variables
     mqtt_host = os.environ.get("MQTT_BROKER_HOST", "localhost")

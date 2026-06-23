@@ -1,1084 +1,1571 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DMS — Premium Monitoring</title>
+  <title>DMS — Driver Monitoring System</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      --bg: #f4f7fa;
-      --surface: #ffffff;
-      --surface-dim: #f8fafc;
-      --border: #e2e8f0;
-      --text-primary: #1e293b;
-      --text-secondary: #64748b;
-      --accent: #3b82f6;
-      --accent-light: rgba(59, 130, 246, 0.1);
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-dim: #334155;
+      --border: #334155;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent: #38bdf8;
       --success: #10b981;
       --warning: #f59e0b;
       --danger: #ef4444;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-      --radius: 16px;
+      --info: #3b82f6;
+      --purple: #8b5cf6;
+      --radius: 12px;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
       font-family: 'Inter', system-ui, sans-serif;
       background-color: var(--bg);
       color: var(--text-primary);
       height: 100vh;
+      width: 100vw;
+      display: flex;
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .app-container {
+      display: flex;
+      width: 100%;
+      height: 100%;
+    }
+
+    .sidebar {
+      width: 260px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 0;
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 24px 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
+      font-weight: 800;
+      font-size: 20px;
+    }
+
+    .brand-text h1 {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .brand-text p {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 0 12px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .nav-item {
+      padding: 12px 16px;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .nav-item:hover {
+      background: var(--surface-dim);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--accent);
+    }
+
+    .sidebar-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #be185d;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    .user-info h4 {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .user-info p {
+      font-size: 11px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+
+    .main-area {
+      flex: 1;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
-    /* Layout Structure */
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 32px;
+
+    .view-container {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      padding: 20px;
+      gap: 20px;
+      overflow: hidden;
+      animation: fadeIn 0.3s ease;
+      padding: 12px;
+      gap: 12px;
+    }
+
+    .view-container.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    .top-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-shrink: 0;
-      z-index: 10;
-    }
-    .header-profile { display: flex; align-items: center; gap: 16px; }
-    .driver-avatar {
-      width: 48px; height: 48px; border-radius: 50%; background: #e2e8f0;
-      display: flex; align-items: center; justify-content: center; font-size: 24px;
-    }
-    .driver-details h1 { font-size: 18px; font-weight: 700; color: var(--text-primary); }
-    .driver-details p { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
-    
-    .header-stats { display: flex; gap: 16px; align-items: center; }
-    .status-pill {
-      background: var(--surface-dim); border: 1px solid var(--border);
-      padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
-      display: flex; align-items: center; gap: 8px; color: var(--text-secondary);
-    }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; }
-    .dot.live { background: var(--success); box-shadow: 0 0 8px var(--success); animation: pulse 2s infinite; }
-    .dot.dead { background: var(--danger); }
-    .dot.warn { background: var(--warning); }
-    
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
-
-    .main-container {
-      display: grid;
-      grid-template-columns: 1fr 400px;
-      gap: 24px;
-      padding: 24px;
-      flex-grow: 1;
-      overflow: hidden;
     }
 
-    /* Left Pane: Video and Behavior Area */
-    .pane-left { display: flex; flex-direction: column; gap: 24px; overflow-y: auto; }
-    
-    .video-panel {
-      position: relative;
-      background: #000;
-      border-radius: var(--radius);
-      overflow: hidden;
-      box-shadow: var(--shadow-lg);
-      aspect-ratio: 16/9;
-      width: 100%;
-      flex-shrink: 0;
+    .top-left h2 {
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    #video-stream { width: 100%; height: 100%; object-fit: cover; }
-    
-    /* Overlays matching image design */
-    .video-overlay-top {
-      position: absolute; top: 20px; left: 20px;
-      background: rgba(0,0,0,0.4); color: #fff; padding: 4px 12px;
-      border-radius: 8px; font-size: 12px; backdrop-filter: blur(4px);
-    }
-    .video-overlay-hud {
-      position: absolute; bottom: 20px; right: 20px;
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(10px);
-      border-radius: 12px;
-      padding: 16px;
-      width: 220px;
-      box-shadow: var(--shadow-lg);
+
+    .top-left p {
       font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .system-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .system-status .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+
+    .top-right {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .metric-badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .metric-badge .lbl {
+      font-size: 10px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .metric-badge .val {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
-    .hud-title {
-      font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px; color: var(--text-primary);
-      border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 2px;
-    }
-    .hud-row { display: flex; justify-content: space-between; color: var(--text-secondary); }
-    .hud-val { font-weight: 600; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; }
-    
-    #alert-banner {
-      position: absolute; top: 0; left: 0; right: 0;
-      background: rgba(239, 68, 68, 0.95); color: #fff;
-      text-align: center; padding: 12px; font-weight: 700; letter-spacing: 1px;
-      display: none; z-index: 20; animation: slideDown 0.3s ease;
-    }
-    #alert-banner.active { display: block; }
-    @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
 
-    #demo-tag {
-      position: absolute; bottom: 20px; left: 20px;
-      background: var(--warning); color: #000; font-weight: 700; font-size: 10px;
-      padding: 4px 8px; border-radius: 4px; display: none;
-    }
-
-    /* Behavior / Logs Panel */
-    .behavior-panel {
-      background: var(--surface);
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow-sm);
-      padding: 20px;
+    .stat-card .lbl {
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .stat-card .val {
+      font-size: 24px;
+      font-weight: 700;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .stat-card .sub {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .stat-card.green .val {
+      color: var(--success);
+    }
+
+    .stat-card.red .val {
+      color: var(--danger);
+    }
+
+    .stat-card.orange .val {
+      color: var(--warning);
+    }
+
+    .stat-card.blue .val {
+      color: var(--info);
+    }
+
+    .middle-row {
+      display: grid;
+      grid-template-columns: 2.5fr 1fr 1.5fr;
       gap: 16px;
     }
-    .panel-title { font-size: 16px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
-    
-    /* Right Pane: Sidebar */
-    .pane-right {
+
+    .card {
       background: var(--surface);
-      border-radius: var(--radius);
       border: 1px solid var(--border);
-      box-shadow: var(--shadow-md);
+      border-radius: var(--radius);
+      overflow: hidden;
       display: flex;
       flex-direction: column;
+    }
+
+    .card-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-body {
+      padding: 16px;
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+    }
+
+    .video-box {
+      position: relative;
+      background: #000;
+      height: 100%;
+      min-height: 250px;
+      border-radius: var(--radius);
       overflow: hidden;
     }
-    .sidebar-scroll { flex-grow: 1; overflow-y: auto; padding: 20px; }
-    
-    /* Tab Navigation System */
-    .tab-header { display: flex; border-bottom: 1px solid var(--border); background: var(--surface-dim); flex-shrink: 0; }
-    .tab-btn { flex: 1; padding: 16px 10px; background: none; border: none; border-bottom: 2px solid transparent; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; outline: none; text-align: center; }
-    .tab-btn:hover { color: var(--accent); background: rgba(59,130,246,0.03); }
-    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--surface); }
-    .tab-pane { display: none; flex-direction: column; gap: 24px; animation: fadeInTab 0.25s ease; }
-    .tab-pane.active { display: flex; }
-    @keyframes fadeInTab { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Task Cards Stylings */
-    .task-card {
-      padding: 16px; border: 1px solid var(--border); border-radius: 12px;
-      background: var(--surface-dim); transition: all 0.2s;
+    .video-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
-    .task-card:hover { border-color: var(--accent); box-shadow: var(--shadow-sm); }
-    .task-card.alerting { border-color: var(--danger); background: rgba(239, 68, 68, 0.02); }
-    
-    .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .task-name { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; color: var(--text-primary); }
-    .task-pred { font-weight: 700; font-size: 14px; color: var(--accent); }
-    .task-pred.alerting { color: var(--danger); }
-    .task-pred.warning { color: var(--warning); }
-    .task-conf { font-size: 11px; color: var(--text-secondary); font-family: 'JetBrains Mono'; }
 
-    .conf-bar-wrap { height: 6px; background: #e2e8f0; border-radius: 3px; margin-bottom: 12px; overflow: hidden; }
-    .conf-bar { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s ease; }
-    .conf-bar.alerting { background: var(--danger); }
-    
-    .class-bars { display: flex; flex-direction: column; gap: 6px; }
-    .class-row { display: grid; grid-template-columns: 80px 1fr 36px; gap: 8px; align-items: center; }
-    .class-name { font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .class-name.active { font-weight: 600; color: var(--text-primary); }
-    .class-bar-wrap { height: 4px; background: #f1f5f9; border-radius: 2px; overflow: hidden; }
-    .class-bar { height: 100%; background: #cbd5e1; border-radius: 2px; transition: width 0.3s; }
-    .class-bar.active { background: var(--accent); }
-    .class-pct { font-size: 10px; color: var(--text-secondary); text-align: right; font-family: 'JetBrains Mono'; }
-    
-    /* Gaze Grid widget */
-    .gaze-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; height: 80px; margin-bottom: 12px; }
-    .gaze-cell {
-      border: 1px solid #e2e8f0; border-radius: 8px; background: var(--surface);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 9px; font-weight: 500; color: var(--text-secondary); text-align: center;
-      transition: all 0.2s;
+    .video-overlay-top {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      font-size: 12px;
+      font-weight: 600;
     }
-    .gaze-cell.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 700; }
 
-    /* Voice/Face Widget Specifics */
-    .widget-card {
-      background: var(--surface-dim); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+    .state-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
-    .widget-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .widget-title { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
-    .indicator-dot { width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; }
-    .indicator-dot.active { background: var(--success); box-shadow: 0 0 6px var(--success); }
-    
+
+    .state-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .state-item .lbl {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-secondary);
+    }
+
+    .state-item .val {
+      font-weight: 600;
+    }
+
+    .state-item .pct {
+      font-family: 'JetBrains Mono';
+      font-size: 11px;
+      color: var(--text-secondary);
+      width: 30px;
+      text-align: right;
+    }
+
+    .val.green {
+      color: var(--success);
+    }
+
+    .val.red {
+      color: var(--danger);
+    }
+
+    .val.blue {
+      color: var(--info);
+    }
+
+    /* REFINED IDENTITY CARD */
+    .id-card {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .id-avatar {
+      width: 85px;
+      height: 85px;
+      border-radius: 50%;
+      border: 2px solid var(--success);
+      padding: 3px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .id-avatar img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #1f2937;
+    }
+
+    .id-badge {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      background: rgba(16, 185, 129, 0.15);
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--success);
+      border: 1px solid var(--success);
+      font-size: 12px;
+    }
+
+    .id-details {
+      flex: 1;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .id-row {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .id-row .lbl {
+      color: var(--text-secondary);
+    }
+
+    .id-row .val {
+      font-weight: 600;
+      font-family: 'JetBrains Mono';
+    }
+
+    .id-status-row {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+      margin-top: 4px;
+    }
+
+    .id-status-row .lbl {
+      color: var(--text-secondary);
+    }
+
+    .id-status-row .val {
+      font-weight: 700;
+      color: var(--success);
+      font-size: 12px;
+    }
+
+    /* REFINED TRANSCRIPT CARD */
+    .ts-content {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .ts-icon {
+      color: var(--success);
+      font-size: 24px;
+      font-weight: bold;
+    }
+
     .transcript-box {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-      padding: 12px; font-size: 13px; min-height: 40px; margin-bottom: 12px; font-style: italic; color: var(--text-secondary);
+      font-size: 14px;
+      color: var(--text-primary);
+      font-weight: 500;
+      font-style: italic;
+      line-height: 1.4;
+      flex: 1;
     }
-    .info-row { display: flex; justify-content: space-between; font-size: 12px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.03); }
-    .info-label { color: var(--text-secondary); }
-    .info-val { font-weight: 600; color: var(--text-primary); }
-    
-    .progress-line-wrap { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin-top: 4px; }
-    .progress-line { height: 100%; background: var(--accent); transition: width 0.3s; }
-    .progress-line.danger { background: var(--danger); }
-    .progress-line.warn { background: var(--warning); }
-    
-    .action-btn {
-      width: 100%; padding: 10px; border: 1px solid var(--accent); border-radius: 8px;
-      background: var(--accent-light); color: var(--accent); font-weight: 600; font-size: 13px;
-      cursor: pointer; transition: all 0.2s; margin-top: 12px;
-    }
-    .action-btn:hover { background: var(--accent); color: #fff; }
-    .action-btn.active { background: var(--danger); border-color: var(--danger); color: #fff; }
 
-    /* Alert Log styling matching sidebar theme */
-    .alert-log { margin-top: auto; border-top: 1px solid var(--border); padding-top: 16px; }
-    .alert-list { display: flex; flex-direction: column; gap: 8px; max-height: 150px; overflow-y: auto; }
+    .ts-stats {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+
+    .ts-stats div {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+    }
+
+    .ts-stats .lbl {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .ts-stats .val {
+      font-weight: 600;
+    }
+
+    .ts-stats .red {
+      color: var(--danger);
+    }
+
+    .ts-stats .orange {
+      color: var(--warning);
+    }
+
+    .ts-stats .green {
+      color: var(--success);
+    }
+
+    /* REFINED RECENT ALERTS */
+    .alert-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+      height: 180px;
+    }
+
     .alert-item {
-      font-size: 11px; padding: 8px 12px; border-radius: 6px; background: #fff;
-      border-left: 4px solid var(--warning); box-shadow: var(--shadow-sm); display: flex; gap: 8px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 4px 0;
+      font-size: 11px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
     }
-    .alert-item.danger { border-left-color: var(--danger); }
 
-    /* Footer Stats (Sticky at bottom of Right Pane) */
-    .pane-footer {
-      background: var(--surface-dim); border-top: 1px solid var(--border);
-      padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; text-align: center;
+    .alert-item:last-child {
+      border-bottom: none;
     }
-    .stat-cell { display: flex; flex-direction: column; gap: 4px; }
-    .stat-label { font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; }
-    .stat-val { font-size: 20px; font-weight: 700; color: var(--text-primary); font-family: 'JetBrains Mono'; }
 
-    /* Modals (Light theme glassmorphism) */
-    .overlay-modal {
-      position: fixed; inset: 0; z-index: 100; background: rgba(15, 23, 42, 0.4);
-      backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;
-      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    .alert-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 12px;
     }
-    .overlay-modal.visible { opacity: 1; pointer-events: auto; }
-    .modal-card {
-      background: #fff; border-radius: 24px; box-shadow: var(--shadow-lg); width: 400px; max-width: 90vw;
-      overflow: hidden; padding: 32px; text-align: center; transform: translateY(20px); transition: transform 0.3s;
+
+    .alert-icon.danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
     }
-    .overlay-modal.visible .modal-card { transform: translateY(0); }
-    .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
-    .modal-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; }
-    
-    .form-input {
-      width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px;
-      font-family: inherit; font-size: 15px; margin-bottom: 16px; outline: none;
+
+    .alert-icon.warning {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
     }
-    .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
-    
+
+    .alert-icon.info {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--info);
+    }
+
+    .alert-time {
+      width: 70px;
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono';
+      padding-top: 2px;
+    }
+
+    .alert-msg {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .alert-msg .title {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 12px;
+    }
+
+    .alert-msg .sub {
+      color: var(--text-secondary);
+    }
+
+    .alert-item .badge {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 10px;
+      margin-top: 2px;
+    }
+
+    .badge.high {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .badge.medium {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .badge.low {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .badge.info {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--info);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .charts-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr) 1.5fr;
+      gap: 16px;
+    }
+
+    .chart-wrapper {
+      height: 120px;
+      width: 100%;
+      position: relative;
+    }
+
+    /* Live Grid & Insights */
+    .live-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1.5fr;
+      gap: 20px;
+      flex: 1;
+      height: 100px;
+    }
+
+    .insights-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .insight-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+
+    .insight-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .bar-row {
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .bar-lbl {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    .bar-lbl .val {
+      font-family: 'JetBrains Mono';
+      color: var(--text-primary);
+    }
+
+    .bar-bg {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    .bar-fill.red {
+      background: var(--danger);
+    }
+
+    .bar-fill.green {
+      background: var(--success);
+    }
+
+    .bar-fill.blue {
+      background: var(--info);
+    }
+
+    .bar-fill.purple {
+      background: var(--purple);
+    }
+
+    .bar-fill.orange {
+      background: var(--warning);
+    }
+
+    .live-charts-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+    }
+
+    .live-footer {
+      display: flex;
+      justify-content: space-between;
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .footer-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .footer-stat .lbl {
+      font-size: 11px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .footer-stat .val {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--success);
+    }
+
+    .footer-stat.neutral .val {
+      color: var(--text-primary);
+    }
+
     .primary-btn {
-      background: var(--accent); color: #fff; border: none; padding: 14px; border-radius: 12px;
-      width: 100%; font-weight: 700; font-size: 15px; cursor: pointer; transition: opacity 0.2s;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: 0.2s;
     }
-    .primary-btn:hover { opacity: 0.9; }
-    .primary-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
-    
-    /* Shared Utilities */
-    .badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
-    .badge.none { background: #f1f5f9; color: var(--text-secondary); }
-    .badge.caution { background: #fffbeb; color: var(--warning); }
-    .badge.warning { background: #fff7ed; color: #c2410c; }
-    .badge.danger, .badge.alert, .badge.critical { background: #fef2f2; color: var(--danger); }
-    
+
+    .primary-btn:hover {
+      filter: brightness(1.1);
+    }
+
+    .sec-btn {
+      background: var(--surface-dim);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+
+    #alert-banner {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(239, 68, 68, 0.95);
+      color: #fff;
+      text-align: center;
+      padding: 8px;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 1px;
+      display: none;
+      z-index: 20;
+    }
+
+    #alert-banner.active {
+      display: block;
+    }
+
+    .overlay-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .overlay-modal.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 400px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-dim);
+      color: #fff;
+      font-family: inherit;
+      font-size: 14px;
+      margin-bottom: 16px;
+      outline: none;
+    }
+
     #conn-overlay {
-      position: fixed; inset: 0; z-index: 1000; background: #fff; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; transition: opacity 0.5s;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.5s;
     }
-    #conn-overlay.hidden { opacity: 0; pointer-events: none; }
-    .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Simple header action button styles */
-    .action-pill {
-      cursor: pointer; background: var(--accent-light); color: var(--accent);
-      border: 1px solid transparent; padding: 6px 14px; border-radius: 20px;
-      font-size: 12px; font-weight: 600; transition: all 0.2s; display: flex; gap: 6px; align-items: center;
+    #conn-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
     }
-    .action-pill:hover { border-color: var(--accent); }
-    .action-pill.enrolled { background: rgba(16, 185, 129, 0.1); color: var(--success); }
-    
-    /* Circular Progress ring for modals */
-    .progress-ring-wrap { position: relative; width: 100px; height: 100px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; }
-    .progress-ring-wrap svg { transform: rotate(-90deg); }
-    .ring-bg { fill: none; stroke: #f1f5f9; stroke-width: 6; }
-    .ring-fg { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 0.35s; }
-    .ring-text { position: absolute; font-family: 'JetBrains Mono'; font-weight: 700; font-size: 18px; color: var(--accent); }
 
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
   </style>
 </head>
-<body>
 
-  <!-- Initial Loader Overlay -->
+<body>
   <div id="conn-overlay">
     <div class="spinner"></div>
-    <p style="font-weight:600; color:var(--text-secondary);">Initializing Advanced DMS Pipeline...</p>
+    <p style="font-weight:600; color:var(--text-secondary);">Connecting to DMS Pipeline...</p>
   </div>
 
-  <!-- Header bar -->
-  <header>
-    <div class="header-profile">
-      <div class="driver-avatar">👤</div>
-      <div class="driver-details">
-        <h1 id="active-driver-display">Driver Unverified</h1>
-        <p>System Active • Live Telematics Mode</p>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">DMS</div>
+        <div class="brand-text">
+          <h1>DMS</h1>
+          <p>Driver Monitoring System</p>
+        </div>
       </div>
-    </div>
-    
-    <div class="header-stats">
-      <div class="status-pill">
-        <div class="dot live" id="model-dot"></div>
-        <span id="model-status">Model</span>
+      <div class="nav-list">
+        <div class="nav-item active" onclick="switchView('dashboard')">⊞ Dashboard</div>
+        <div class="nav-item" onclick="switchView('live')">👁 Live Monitoring</div>
+        <div class="nav-item">📊 Analytics</div>
+        <div class="nav-item">🎙 Audio Analytics</div>
+        <div class="nav-item" onclick="openFaceEnrolModal()">👤 Identity Verification</div>
+        <div class="nav-item">🔔 Alert History</div>
+        <div class="nav-item">📄 Reports</div>
+        <div class="nav-item">⚙ Settings</div>
       </div>
-      <div class="status-pill">
-        <div class="dot live" id="cam-dot"></div>
-        <span id="cam-status">Cam</span>
-      </div>
-      <span id="fps-badge" style="font-family:'JetBrains Mono'; font-size:12px; color:var(--text-secondary);">-- FPS</span>
-      
-      <div style="width: 1px; height: 24px; background: var(--border); margin: 0 8px;"></div>
-
-      <button class="action-pill" id="speaker-badge" onclick="openEnrolModal()">
-        🎤 <span id="speaker-badge-text">Enroll Voice</span>
-      </button>
-      <button class="action-pill" id="face-badge" onclick="openFaceEnrolModal()">
-        🔒 <span id="face-badge-text">Enroll Face</span>
-      </button>
-    </div>
-  </header>
-
-  <main class="main-container">
-    <!-- Left Pane: Dynamic Floating Video Space -->
-    <div class="pane-left" style="overflow:visible;">
-      <div class="video-panel" style="flex-grow: 1; aspect-ratio: unset;">
-        <div id="alert-banner">⚠️ CRITICAL: DROWSINESS DETECTED — TAKE A BREAK ⚠️</div>
-        <div class="video-overlay-top">Camera 01 • Live Stream</div>
-        <img id="video-stream" src="/video_feed" alt="Camera Feed" style="object-fit: cover;">
-        <div id="demo-tag">DEMO ACTIVE</div>
-        
-        <!-- Overlaid Quick Insight Box mirroring screenshot aesthetic -->
-        <div class="video-overlay-hud">
-          <div class="hud-title">✨ System Status</div>
-          <div class="hud-row"><span>Alert Status</span><span class="hud-val" id="hud-alert-lvl" style="color:var(--success)">CLEAR</span></div>
-          <div class="hud-row"><span>FPS Tracking</span><span class="hud-val" id="hud-fps">--</span></div>
-          <div class="hud-row"><span>Audio Activity</span><span class="hud-val" id="hud-audio">IDLE</span></div>
+      <div class="sidebar-footer">
+        <div class="user-avatar">AK</div>
+        <div class="user-info">
+          <h4>Admin</h4>
+          <p>System Operator <span class="status-dot"></span> Online</p>
         </div>
       </div>
     </div>
 
-    <!-- Right Pane: Analytical Tab Stacks -->
-    <div class="pane-right">
-      <!-- Tab Headers (Mirroring screenshot tab layout) -->
-      <div class="tab-header">
-        <button class="tab-btn active" onclick="switchTab('vision')">Vision</button>
-        <button class="tab-btn" onclick="switchTab('speech')">Speech</button>
-        <button class="tab-btn" onclick="switchTab('face')">Face</button>
-      </div>
+    <!-- Main Content -->
+    <div class="main-area">
+      <!-- DASHBOARD -->
+      <div id="view-dashboard" class="view-container active">
+        <div class="top-bar">
+          <div class="top-left">
+            <div class="system-status"><span class="dot" id="model-dot"></span> <span id="model-status">System
+                Active</span></div>
+          </div>
+          <div class="top-right">
+            <div class="metric-badge"><span class="lbl">FPS</span><span class="val" id="dash-fps">28</span></div>
+            <div class="metric-badge"><span class="lbl">MODEL</span><span class="val">TensorRT</span></div>
+            <div class="metric-badge"><span class="lbl">DEVICE</span><span class="val">Orin Nano</span></div>
+            <div style="width:1px; height:24px; background:var(--border); margin:0 8px;"></div>
+            <button class="primary-btn sec-btn" onclick="openFaceEnrolModal()">🔒 Enroll Face</button>
+            <button class="primary-btn" onclick="openEnrolModal()">🎤 Enroll Voice</button>
+          </div>
+        </div>
 
-      <div class="sidebar-scroll">
-        
-        <!-- Tab 1: Vision Data -->
-        <div id="tab-vision" class="tab-pane active">
-          <div id="sidebar" style="display:flex; flex-direction:column; gap:24px;">
-            <div style="border-bottom: 1px solid var(--border); padding-bottom:12px; margin-bottom:-12px;">
-              <h2 style="font-size: 15px; font-weight:700;">Vision Risk Vectors</h2>
-              <p style="font-size: 11px; color:var(--text-secondary); margin-top:2px;">Active multi-task classification</p>
+        <div class="stats-row">
+          <div class="stat-card green"><span class="lbl">◬ Drowsiness Score</span><span class="val"><span
+                id="dash-drowsy-pct">0</span>% <span class="sub" id="dash-drowsy-txt">Low</span></span></div>
+          <div class="stat-card green"><span class="lbl">👁 Attention Score</span><span class="val"><span
+                id="dash-attn-pct">100</span>% <span class="sub" id="dash-attn-txt">Good</span></span></div>
+          <div class="stat-card red"><span class="lbl">🎙 Audio Risk Score</span><span class="val"><span
+                id="dash-audio-pct">0</span>% <span class="sub" id="dash-audio-txt">Low</span></span></div>
+          <div class="stat-card orange"><span class="lbl">⚠️ Active Alerts</span><span class="val"><span
+                id="dash-active-alerts">0</span> <span class="sub">Warning</span></span></div>
+          <div class="stat-card orange"><span class="lbl">🔔 Total Alerts</span><span class="val"><span
+                id="alert-count">0</span> <span class="sub">Today</span></span></div>
+          <div class="stat-card blue"><span class="lbl">⏱ Session Duration</span><span class="val"
+              id="uptime">00:00:00</span></div>
+        </div>
+
+        <div class="dashboard-grid"
+          style="display: grid; grid-template-columns: 3fr 1.2fr; gap: 12px; flex: 1; min-height: 0;">
+          <!-- Left Main Area -->
+          <div style="display: flex; flex-direction: column; gap: 12px; min-height: 0;">
+            <!-- Top row: Video + Driver State -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; flex: 1.5; min-height: 0;">
+              <div class="card" style="padding:0;">
+                <div class="video-box" style="height: 100%; border-radius: var(--radius);">
+                  <div id="alert-banner">⚠️ CRITICAL: DROWSINESS DETECTED</div>
+                  <div class="video-overlay-top" style="color:var(--success)">Live Camera Feed <span
+                      style="background:rgba(16,185,129,0.2); padding:2px 6px; border-radius:4px;">LIVE</span></div>
+                  <img id="video-stream" src="/video_feed" alt="Feed"
+                    style="width:100%; height:100%; object-fit:cover;">
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-header">Driver State</div>
+                <div class="card-body state-list" style="justify-content:center; padding: 8px;">
+                  <div class="state-item"><span class="lbl">😴 Drowsiness</span><span class="val green"
+                      id="ds-drowsy">Normal</span><span class="pct" id="ds-drowsy-p">0%</span></div>
+                  <div class="state-item"><span class="lbl">👁 Eye State</span><span class="val green"
+                      id="ds-eye">Open</span><span class="pct" id="ds-eye-p">0%</span></div>
+                  <div class="state-item"><span class="lbl">🥱 Yawning</span><span class="val green"
+                      id="ds-yawn">No</span><span class="pct" id="ds-yawn-p">0%</span></div>
+                  <div class="state-item"><span class="lbl">🧭 Gaze Direction</span><span class="val green"
+                      id="ds-gaze">Forward</span><span class="pct" id="ds-gaze-p">0%</span></div>
+                  <div class="state-item"><span class="lbl">🙂 Emotion</span><span class="val blue"
+                      id="ds-emotion">Neutral</span><span class="pct" id="ds-emotion-p">0%</span></div>
+                  <div class="state-item"><span class="lbl">📱 Distraction</span><span class="val green"
+                      id="ds-dist">No</span><span class="pct" id="ds-dist-p">0%</span></div>
+                </div>
+              </div>
             </div>
-            <!-- Javascript injects .task-cards here -->
-            
-            <div class="alert-log" id="alert-log">
-              <h3 style="font-size:13px; font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:6px;">📋 Live Event History</h3>
-              <div class="alert-list" id="alert-list">
-                 <div style="font-size:12px; color:var(--text-secondary); font-style:italic;">Awaiting event stream...</div>
+
+            <!-- Charts Row -->
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; flex: 1; min-height: 0;">
+              <div class="card">
+                <div class="card-header">Drowsiness</div>
+                <div class="card-body" style="padding:4px;">
+                  <div class="chart-wrapper" style="height:100%;"><canvas id="chartDrowsy"></canvas></div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-header">Audio Risk</div>
+                <div class="card-body" style="padding:4px;">
+                  <div class="chart-wrapper" style="height:100%;"><canvas id="chartAudio"></canvas></div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-header">Gaze</div>
+                <div class="card-body" style="padding:4px;">
+                  <div class="chart-wrapper" style="height:100%;"><canvas id="chartGaze"></canvas></div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-header">Attention</div>
+                <div class="card-body" style="padding:4px;">
+                  <div class="chart-wrapper" style="height:100%;"><canvas id="chartAttn"></canvas></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Activity Row -->
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; flex: 1; min-height: 0;">
+              <div class="card">
+                <div class="card-header">Alert Dist (Today)</div>
+                <div class="card-body" style="display:flex; justify-content:center; align-items:center;">
+                  <!-- We can reuse chartGaze or make a new one -->
+                  <div class="chart-wrapper" style="width:100px; height:100px;"><canvas id="chartAlerts"></canvas></div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-header">Activity Summary</div>
+                <div class="card-body" style="display:flex; justify-content:space-around; align-items:center;">
+                  <div style="text-align:center;">
+                    <div style="font-size:20px; font-weight:700;" id="sum-drowsy">0</div>
+                    <div style="font-size:10px; color:var(--text-secondary);">Drowsy Events</div>
+                  </div>
+                  <div style="text-align:center;">
+                    <div style="font-size:20px; font-weight:700;" id="sum-yawn">0</div>
+                    <div style="font-size:10px; color:var(--text-secondary);">Yawning Events</div>
+                  </div>
+                  <div style="text-align:center;">
+                    <div style="font-size:20px; font-weight:700;" id="sum-phone">0</div>
+                    <div style="font-size:10px; color:var(--text-secondary);">Phone Usage</div>
+                  </div>
+                  <div style="text-align:center;">
+                    <div style="font-size:20px; font-weight:700;" id="sum-audio">0</div>
+                    <div style="font-size:10px; color:var(--text-secondary);">Audio Alerts</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- System Resources Row -->
+            <div class="card"
+              style="flex: 0.5; display:flex; flex-direction:row; justify-content:space-between; align-items:center; padding: 0 16px; font-size:12px;">
+              <div style="display:flex; flex-direction:column;"><span style="color:var(--text-secondary);">CPU
+                  Usage</span><span style="font-weight:700;">32%</span></div>
+              <div style="display:flex; flex-direction:column;"><span style="color:var(--text-secondary);">GPU
+                  Usage</span><span style="font-weight:700;">68%</span></div>
+              <div style="display:flex; flex-direction:column;"><span style="color:var(--text-secondary);">RAM
+                  Usage</span><span style="font-weight:700;">45%</span></div>
+              <div style="display:flex; flex-direction:column;"><span
+                  style="color:var(--text-secondary);">Temperature</span><span style="font-weight:700;">62°C</span>
+              </div>
+              <div style="display:flex; flex-direction:column;"><span style="color:var(--text-secondary);">TensorRT
+                  FPS</span><span style="font-weight:700;" id="sys-fps">28</span></div>
+              <div style="display:flex; flex-direction:column;"><span style="color:var(--text-secondary);">Power
+                  Mode</span><span style="font-weight:700; color:var(--success);">MAXN</span></div>
+            </div>
+          </div>
+
+          <!-- Right Sidebar Area -->
+          <div style="display: flex; flex-direction: column; gap: 12px; min-height: 0;">
+            <div class="card" style="flex: 1.2;">
+              <div class="card-header">Driver Identity <span
+                  style="color:var(--success); font-size:11px; background:rgba(16,185,129,0.1); padding:2px 6px; border-radius:10px;">●
+                  Verified</span></div>
+              <div class="card-body id-card" style="padding:12px;">
+                <div class="id-avatar"><img
+                    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fff'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E"
+                    alt="" id="driver-avatar-img">
+                  <div class="id-badge">✓</div>
+                </div>
+                <div class="id-details">
+                  <div class="id-row"><span class="lbl">Driver</span><span class="val" id="face-name-val">—</span>
+                  </div>
+                  <div class="id-row"><span class="lbl">Match</span><span class="val" id="face-sim-val">—</span>
+                  </div>
+                  <div class="id-row"><span class="lbl">Liveness</span><span class="val"
+                      style="color:var(--text-secondary)" id="face-live-val">—</span></div>
+                  <div class="id-row"><span class="lbl">Speaker</span><span class="val" id="voice-speaker"
+                      style="color:var(--text-secondary)">—</span></div>
+                  <div class="id-status-row"><span class="lbl">Status</span><span class="val" id="face-match-badge"
+                      style="color:var(--text-secondary)">UNVERIFIED</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="card" style="flex: 1;">
+              <div class="card-header">Live Transcript <span
+                  style="color:var(--success); font-size:11px; background:rgba(16,185,129,0.1); padding:2px 6px; border-radius:10px;">●
+                  Live</span></div>
+              <div class="card-body" style="padding:12px;">
+                <div class="ts-content" style="margin-bottom:4px;">
+                  <div class="ts-icon">ılılı</div>
+                  <div class="transcript-box" id="transcript-box"></div>
+                </div>
+                <div class="ts-stats">
+                  <div><span class="lbl">Speaker</span><span class="val green" id="voice-speaker-stat">DRIVER</span>
+                  </div>
+                  <div><span class="lbl">Risk</span><span class="val red" id="voice-risk-score">0.82</span></div>
+                  <div><span class="lbl">Keyword</span><span class="val orange" id="voice-keyword">sleepy</span></div>
+                  <div><span class="lbl">Alert</span><span class="val orange" id="voice-alert-badge">WARNING</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card" style="flex: 2;">
+              <div class="card-header">Recent Alerts <a href="#"
+                  style="font-size:11px; color:var(--text-secondary); text-decoration:none;">View All</a></div>
+              <div class="card-body" style="padding:8px;">
+                <div class="alert-list" id="alert-list"
+                  style="height:100%; max-height: 250px; width: 100%; padding: inherit"></div>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Tab 2: Speech Engine -->
-        <div id="tab-speech" class="tab-pane">
-          <div style="border-bottom: 1px solid var(--border); padding-bottom:12px; margin-bottom:4px;">
-            <h2 style="font-size: 15px; font-weight:700;">Speech Analysis</h2>
-            <p style="font-size: 11px; color:var(--text-secondary); margin-top:2px;">NLP and Acoustic fingerprinting</p>
+      <!-- LIVE MONITORING -->
+      <div id="view-live" class="view-container">
+        <div class="top-bar">
+          <div class="top-left">
+            <h2>Live Monitoring</h2>
+            <p>Real-time driver analysis from vision pipeline</p>
           </div>
-
-          <div id="voice-panel" class="widget-card" style="background:var(--surface-dim); border: 1px solid var(--border);">
-             <div class="transcript-box" id="transcript-box" style="background:#fff; font-size:14px;">Listening for speech stream...</div>
-             <div class="info-row"><span class="info-label">🗣️ Identified Speaker</span><span class="info-val" id="voice-speaker">—</span></div>
-             <div class="info-row"><span class="info-label">💡 Keywords Captured</span><span class="info-val" id="voice-keyword" style="color:var(--warning)">—</span></div>
-             <div class="info-row"><span class="info-label">🧠 Text Sentiment</span><span class="info-val" id="voice-bert">—</span></div>
-             
-             <div style="margin-top:16px;">
-               <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:var(--text-secondary); margin-bottom:6px;">
-                  <span>FUSED AUDITORY RISK</span>
-                  <span id="voice-risk-score">0.00</span>
-               </div>
-               <div class="progress-line-wrap" style="height:8px;"><div class="progress-line" id="voice-risk-bar" style="width:0%;"></div></div>
-             </div>
-             <div style="display:flex; justify-content:space-between; margin-top:20px; align-items:center;">
-                <span class="badge none" id="voice-alert-badge" style="padding: 4px 10px;">LEVEL: NONE</span>
-                <span id="voice-latency" style="font-family:'JetBrains Mono'; font-size:11px; color:var(--text-secondary);">--ms</span>
-             </div>
+          <div class="top-right">
+            <div class="metric-badge"><span class="lbl">FPS</span><span class="val" style="color:var(--success);"
+                id="live-fps">28</span></div>
+            <div class="metric-badge"><span class="lbl">MODEL</span><span class="val">TensorRT</span></div>
+            <div class="metric-badge"><span class="lbl">DEVICE</span><span class="val">Orin Nano</span></div>
+            <div class="metric-badge"><span class="lbl">RESOLUTION</span><span class="val">640 x 480</span></div>
           </div>
         </div>
 
-        <!-- Tab 3: Face ID Verification -->
-        <div id="tab-face" class="tab-pane">
-          <div style="border-bottom: 1px solid var(--border); padding-bottom:12px; margin-bottom:4px;">
-            <h2 style="font-size: 15px; font-weight:700;">Driver Verification</h2>
-            <p style="font-size: 11px; color:var(--text-secondary); margin-top:2px;">Secure ID confirmation & liveness detection</p>
+        <div class="live-grid">
+          <div class="card" style="padding:16px;">
+            <div class="video-box">
+              <div class="video-overlay-top" style="color:var(--text-primary)">Live Camera Feed <span
+                  style="background:rgba(16,185,129,0.2); color:var(--success); padding:2px 6px; border-radius:4px; font-size:10px;">LIVE</span>
+              </div>
+              <div class="vid-overlay-hud"
+                style="position:absolute; top:40px; left:12px; background:rgba(0,0,0,0.6); padding:8px 12px; border-radius:8px; font-size:11px; border:1px solid rgba(255,255,255,0.1);">
+                <div style="display:flex; justify-content:space-between; gap:16px;"><span
+                    style="color:var(--text-secondary)">Face:</span><span style="color:var(--success); font-weight:700;"
+                    id="hud-face">DETECTED</span></div>
+                <div style="display:flex; justify-content:space-between; gap:16px;"><span
+                    style="color:var(--text-secondary)">Liveness:</span><span
+                    style="color:var(--success); font-weight:700;" id="hud-live">REAL</span></div>
+                <div style="display:flex; justify-content:space-between; gap:16px;"><span
+                    style="color:var(--text-secondary)">Identity:</span><span
+                    style="color:var(--success); font-weight:700;" id="hud-id">VERIFIED</span></div>
+                <div style="display:flex; justify-content:space-between; gap:16px;"><span
+                    style="color:var(--text-secondary)">Driver:</span><span
+                    style="color:var(--text-primary); font-weight:700;" id="active-driver-display">Unknown</span></div>
+              </div>
+            </div>
           </div>
 
-          <div id="face-panel" class="widget-card" style="background:var(--surface-dim); border: 1px solid var(--border);">
-             <div class="widget-header" style="margin-bottom:12px;">
-               <span style="font-weight:600; font-size:13px; color:var(--text-primary);">🛡️ Passive Biometric Scan</span>
-               <div class="indicator-dot" id="face-verify-dot"></div>
-             </div>
-             <div class="info-row"><span class="info-label">Match Status</span><span class="info-val" id="face-match-badge" style="font-weight:800;">INITIALIZING</span></div>
-             <div class="info-row"><span class="info-label">Similarity Vectors</span><span class="info-val" id="face-similarity">—</span></div>
-             <div class="info-row"><span class="info-label">Anti-Spoof Integrity</span><span class="info-val" id="face-liveness">—</span></div>
-             
-             <div class="progress-line-wrap" style="margin-top:16px; height:8px;"><div class="progress-line" id="face-sim-bar" style="width:0%"></div></div>
-             
-             <button class="action-btn" id="face-verify-toggle-btn" onclick="toggleFaceVerify()" style="padding: 12px; margin-top: 24px; font-size:14px;">▶ ENABLE FACE ID SCANNER</button>
+          <div class="card" style="background:transparent; border:none;">
+            <div class="insights-grid" id="insights-grid"></div>
           </div>
         </div>
 
-      </div>
-
-      <!-- Summary Statistics Fixed Footer -->
-      <div class="pane-footer">
-        <div class="stat-cell" style="border-right: 1px solid var(--border);">
-          <span class="stat-label">Alert Log</span>
-          <span class="stat-val" id="alert-count" style="color:var(--danger)">0</span>
+        <h3
+          style="font-size:13px; color:var(--text-secondary); text-transform:uppercase; font-weight:600; margin-top:5px;">
+          Key Metrics Over Time</h3>
+        <div class="live-charts-row">
+          <div class="card">
+            <div class="card-header">Drowsiness (%)</div>
+            <div class="card-body">
+              <div class="chart-wrapper"><canvas id="cLive1"></canvas></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">Eye Closure (%)</div>
+            <div class="card-body">
+              <div class="chart-wrapper"><canvas id="cLive2"></canvas></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">Yawning (%)</div>
+            <div class="card-body">
+              <div class="chart-wrapper"><canvas id="cLive3"></canvas></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">Distracted Activity (%)</div>
+            <div class="card-body">
+              <div class="chart-wrapper"><canvas id="cLive4"></canvas></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">Attention Score (%)</div>
+            <div class="card-body">
+              <div class="chart-wrapper"><canvas id="cLive5"></canvas></div>
+            </div>
+          </div>
         </div>
-        <div class="stat-cell">
-          <span class="stat-label">Run Duration</span>
-          <span class="stat-val" id="uptime">0s</span>
+
+        <div class="live-footer">
+          <div class="footer-stat"><span class="lbl">📷 Face Detected</span><span class="val" id="foot-face">Yes</span>
+          </div>
+          <div class="footer-stat"><span class="lbl">◎ Liveness Score</span><span class="val" id="foot-live">0.0</span>
+          </div>
+          <div class="footer-stat"><span class="lbl">👤 Identity Match</span><span class="val" id="foot-id">0.0</span>
+          </div>
+          <div class="footer-stat neutral"><span class="lbl">◷ Latency</span><span class="val"
+              style="color:var(--accent)" id="foot-lat">22 ms</span></div>
+          <div class="footer-stat neutral"><span class="lbl">⚙ Pipeline Status</span><span class="val"
+              style="color:var(--success)">● Active</span></div>
         </div>
-      </div>
-    </div>
-  </main>
-
-  <!-- ==========================================
-       MODALS & DIALOGS
-       ========================================== -->
-
-  <!-- VOICE MODAL -->
-  <div class="overlay-modal" id="enrol-overlay">
-    <div class="modal-card">
-      <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
-        <h2 class="modal-title">🎙️ Voice Enrollment</h2>
-        <button style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-secondary);" onclick="closeEnrolModal()">&times;</button>
-      </div>
-      
-      <!-- Steps Tracking Bar (hidden simplification but maintaining IDs) -->
-      <div id="edot-1" style="display:none"></div><div id="elbl-1" style="display:none"></div><div id="eline-1" style="display:none"></div>
-      <div id="edot-2" style="display:none"></div><div id="elbl-2" style="display:none"></div><div id="eline-2" style="display:none"></div>
-      <div id="edot-3" style="display:none"></div><div id="elbl-3" style="display:none"></div>
-
-      <div id="estep-1" class="enrol-step-content" style="display:block">
-        <p class="modal-desc">Register your vocal fingerprint for high-confidence identification.</p>
-        <input type="text" class="form-input" id="driver-name-input" placeholder="Driver Full Name">
-        <button class="primary-btn" id="enrol-begin-btn" onclick="startEnrolment()">Begin Sampling</button>
-      </div>
-
-      <div id="estep-2" class="enrol-step-content" style="display:none">
-        <div class="progress-ring-wrap">
-          <svg width="100" height="100"><circle class="ring-bg" cx="50" cy="50" r="45"></circle><circle class="ring-fg" id="enrol-ring" cx="50" cy="50" r="45" stroke-dasharray="282.7" stroke-dashoffset="282.7"></circle></svg>
-          <span class="ring-text" id="enrol-pct">0%</span>
-        </div>
-        <p id="enrol-phase-label" style="font-weight:700; color:var(--accent); margin-bottom:4px;">RECORDING</p>
-        <p class="modal-desc" id="enrol-status-msg">Speak naturally into the microphone...</p>
-      </div>
-
-      <div id="estep-3" class="enrol-step-content" style="display:none">
-        <div style="font-size: 48px; margin-bottom:16px;">✅</div>
-        <h3 id="enrol-result-title" style="font-weight:700; margin-bottom:8px;">Complete</h3>
-        <p id="enrol-result-msg" class="modal-desc">Sample stored successfully.</p>
-        <button class="primary-btn" onclick="closeEnrolModal()">Done</button>
       </div>
     </div>
   </div>
 
-  <!-- FACE MODAL -->
+  <!-- MODALS -->
+  <div class="overlay-modal" id="enrol-overlay">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+        <h2 class="modal-title">🎙️ Voice Enrollment</h2><button
+          style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-secondary);"
+          onclick="closeEnrolModal()">&times;</button>
+      </div>
+      <div id="estep-1" style="display:block">
+        <p class="modal-desc">Register your vocal fingerprint.</p><input type="text" class="form-input"
+          id="driver-name-input" placeholder="Driver Full Name"><button class="primary-btn" id="enrol-begin-btn"
+          onclick="startEnrolment()" style="width:100%;">Begin Sampling</button>
+      </div>
+      <div id="estep-2" style="display:none">
+        <h3 id="enrol-pct">0%</h3>
+        <p id="enrol-phase-label" style="color:var(--accent);">RECORDING</p>
+      </div>
+      <div id="estep-3" style="display:none">
+        <h3 id="enrol-result-title">Complete</h3>
+        <p id="enrol-result-msg" class="modal-desc"></p><button class="primary-btn" onclick="closeEnrolModal()"
+          style="width:100%;">Done</button>
+      </div>
+    </div>
+  </div>
   <div class="overlay-modal" id="face-enrol-overlay">
     <div class="modal-card">
       <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
-        <h2 class="modal-title">🔒 Face Registration</h2>
-        <button style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-secondary);" onclick="closeFaceEnrolModal()">&times;</button>
+        <h2 class="modal-title">🔒 Face Registration</h2><button
+          style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-secondary);"
+          onclick="closeFaceEnrolModal()">&times;</button>
       </div>
-      
-      <div id="fdot-1" style="display:none"></div><div id="flbl-1" style="display:none"></div><div id="fline-1" style="display:none"></div>
-      <div id="fdot-2" style="display:none"></div><div id="flbl-2" style="display:none"></div><div id="fline-2" style="display:none"></div>
-      <div id="fdot-3" style="display:none"></div><div id="flbl-3" style="display:none"></div>
-
-      <div id="fstep-1" class="enrol-step-content" style="display:block">
-        <p class="modal-desc">Look directly at the camera under good lighting to save geometric embeddings.</p>
-        <input type="text" class="form-input" id="face-driver-name-input" placeholder="Driver Full Name">
-        <button class="primary-btn" id="face-enrol-begin-btn" onclick="startFaceEnrolment()">Start Capture</button>
+      <div id="fstep-1" style="display:block">
+        <p class="modal-desc">Save geometric embeddings.</p><input type="text" class="form-input"
+          id="face-driver-name-input" placeholder="Driver Full Name"><button class="primary-btn"
+          id="face-enrol-begin-btn" onclick="startFaceEnrolment()" style="width:100%;">Start Capture</button><button
+          class="primary-btn sec-btn" style="margin-top:10px; width:100%;" onclick="toggleFaceVerify()"
+          id="face-verify-toggle-btn">Start Verify Scan</button>
       </div>
-
-      <div id="fstep-2" class="enrol-step-content" style="display:none">
-        <div class="progress-ring-wrap">
-          <svg width="100" height="100"><circle class="ring-bg" cx="50" cy="50" r="45"></circle><circle class="ring-fg" id="face-enrol-ring" cx="50" cy="50" r="45" stroke-dasharray="282.7" stroke-dashoffset="282.7"></circle></svg>
-          <span class="ring-text" id="face-enrol-pct">0%</span>
-        </div>
-        <p id="face-enrol-phase-label" style="font-weight:700; color:var(--accent); margin-bottom:4px;">CAPTURING</p>
-        <p class="modal-desc" id="face-enrol-status-msg">Stay completely still, analyzing live feed...</p>
+      <div id="fstep-2" style="display:none">
+        <h3 id="face-enrol-pct">0%</h3>
       </div>
-
-      <div id="fstep-3" class="enrol-step-content" style="display:none">
-        <div style="font-size: 48px; margin-bottom:16px;">✅</div>
-        <h3 id="face-enrol-result-title" style="font-weight:700; margin-bottom:8px;">Registered</h3>
-        <p id="face-enrol-result-msg" class="modal-desc">Face vector mapped successfully.</p>
-        <button class="primary-btn" onclick="closeFaceEnrolModal()">Done</button>
+      <div id="fstep-3" style="display:none">
+        <h3 id="face-enrol-result-title">Registered</h3>
+        <p id="face-enrol-result-msg" class="modal-desc"></p><button class="primary-btn" onclick="closeFaceEnrolModal()"
+          style="width:100%;">Done</button>
       </div>
     </div>
   </div>
 
   <script>
-    // ── Data from Flask ──────────────────────────────────────────
     const TASK_META = {{ task_meta| safe }};
     const TASK_ORDER = {{ task_order| safe }};
+    let alertCount = 0; let startTime = Date.now();
 
-    // ── State ────────────────────────────────────────────────────
-    let alertCount = 0;
-    let startTime = Date.now();
-    let lastPreds = {};
-    let demoMode = false;
+    Chart.defaults.color = '#9ca3af'; Chart.defaults.font.family = 'Inter';
+    const commonOpt = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: true, min: 0, max: 100, border: { display: false }, grid: { color: '#1f2937' } } }, elements: { point: { radius: 0 }, line: { tension: 0.3, borderWidth: 2 } } };
+    function createChart(ctxId, color, fill = true) { return new Chart(document.getElementById(ctxId), { type: 'line', data: { labels: Array(30).fill(''), datasets: [{ data: Array(30).fill(0), borderColor: color, backgroundColor: fill ? color + '20' : 'transparent', fill: fill }] }, options: commonOpt }); }
 
-    // Gaze grid layout map for JS logic consistency
-    const GAZE_GRID_POS = {
-      "Top-Left": [0, 0], "Top-Center": [0, 1], "Top-Right": [0, 2],
-      "Middle-Left": [1, 0], "Middle-Right": [1, 2],
-      "Bottom-Left": [2, 0], "Bottom-Center": [2, 1], "Bottom-Right": [2, 2],
-    };
+    const charts = { dashDrowsy: createChart('chartDrowsy', '#ef4444'), dashAudio: createChart('chartAudio', '#f59e0b'), dashGaze: new Chart(document.getElementById('chartGaze'), { type: 'doughnut', data: { labels: ['Fwd', 'Left', 'Right', 'Up', 'Down'], datasets: [{ data: [1, 1, 1, 1, 1], backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } }, cutout: '70%' } }), dashAttn: new Chart(document.getElementById('chartAttn'), { type: 'bar', data: { labels: Array(15).fill(''), datasets: [{ data: Array(15).fill(0), backgroundColor: '#10b981' }] }, options: { ...commonOpt, scales: { x: { display: false }, y: { min: 0, max: 100, grid: { color: '#1f2937' } } } } }), chartAlerts: new Chart(document.getElementById('chartAlerts'), { type: 'doughnut', data: { labels: ['High', 'Medium', 'Info'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '70%' } }), l1: createChart('cLive1', '#ef4444'), l2: createChart('cLive2', '#10b981'), l3: createChart('cLive3', '#3b82f6'), l4: createChart('cLive4', '#f59e0b'), l5: createChart('cLive5', '#8b5cf6') };
+    function updateChartData(chart, val) { if (chart.config.type === 'line' || chart.config.type === 'bar') { const d = chart.data.datasets[0].data; d.push(val); d.shift(); chart.update('none'); } }
 
-    // ── Build sidebar cards ──────────────────────────────────────
-    function buildSidebar() {
-      const sidebar = document.getElementById("sidebar");
-      const log = document.getElementById("alert-log");
+    function buildInsights() {
+      const grid = document.getElementById('insights-grid');
+      const colors = ['red', 'green', 'blue', 'purple', 'orange', 'red']; let i = 0;
+      for (const t of TASK_ORDER) {
+        if (!TASK_META[t] || t === 'age' || t === 'gender') continue;
+        const meta = TASK_META[t]; const clr = colors[i % colors.length]; i++;
+        let barsHtml = '';
+        for (const [clsId, clsName] of Object.entries(meta.classes)) { barsHtml += `<div class="bar-row"><div class="bar-lbl"><span>${clsName}</span><span class="val" id="bar-v-${t}-${clsName}">0.0%</span></div><div class="bar-bg"><div class="bar-fill ${clr}" id="bar-f-${t}-${clsName}" style="width:0%"></div></div></div>`; }
+        grid.innerHTML += `<div class="insight-card"><div class="insight-title"><span>${meta.label} (${Object.keys(meta.classes).length} Classes)</span> <span>ⓘ</span></div>${barsHtml}</div>`;
+      }
+    }
+    buildInsights();
 
-      TASK_ORDER.forEach(task => {
-        const meta = TASK_META[task];
-        const classes = meta.classes;
-        const card = document.createElement("div");
-        card.className = "task-card";
-        card.id = `card-${task}`;
-
-        const isGaze = task === "gaze";
-        const classesHTML = isGaze ? buildGazeGrid() : buildClassBars(task, classes);
-
-        card.innerHTML = `
-          <div class="task-header">
-            <div class="task-name">
-              <span>${meta.icon}</span>
-              <span>${meta.label}</span>
-            </div>
-            <div style="text-align:right;">
-              <div class="task-pred" id="pred-${task}">—</div>
-              <div class="task-conf" id="conf-${task}">—</div>
-            </div>
-          </div>
-          <div class="conf-bar-wrap">
-            <div class="conf-bar" id="confbar-${task}" style="width:0%"></div>
-          </div>
-          ${classesHTML}
-        `;
-        sidebar.insertBefore(card, log);
-      });
+    function switchView(v) {
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); event.currentTarget.classList.add('active');
+      document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active')); document.getElementById(`view-${v}`).classList.add('active');
+      const vid = document.getElementById('video-stream');
+      const targetBox = document.querySelector(`#view-${v} .video-box`);
+      if (vid && targetBox) targetBox.appendChild(vid);
     }
 
-    function buildClassBars(task, classes) {
-      const ids = Object.keys(classes);
-      return `<div class="class-bars" id="bars-${task}">
-        ${ids.map(id => `
-          <div class="class-row" id="row-${task}-${id}">
-            <span class="class-name" id="cname-${task}-${id}">${classes[id]}</span>
-            <div class="class-bar-wrap"><div class="class-bar" id="cbar-${task}-${id}" style="width:0%"></div></div>
-            <span class="class-pct" id="cpct-${task}-${id}">0%</span>
-          </div>`).join("")}
-      </div>`;
-    }
-
-    function buildGazeGrid() {
-      const cells = [
-        ["Top-Left", "Top-Center", "Top-Right"],
-        ["Middle-Left", "—", "Middle-Right"],
-        ["Bottom-Left", "Bottom-Center", "Bottom-Right"],
-      ];
-      const rows = cells.map(row =>
-        row.map(label => {
-          if (label === "—") return `<div class="gaze-cell" style="background:#f8fafc; border:none; color:var(--accent); font-size:14px">◉</div>`;
-          const safeId = label.replace(/\s+/g, "-").toLowerCase();
-          return `<div class="gaze-cell" id="gaze-cell-${safeId}">${label.replace("-", " ")}</div>`;
-        }).join("")
-      ).join("");
-
-      return `<div class="gaze-grid">${rows}</div>
-      <div class="class-bars" id="bars-gaze" style="display:none">
-        ${Object.entries(TASK_META.gaze.classes).map(([id, name]) => `
-          <div class="class-row">
-            <span class="class-name" id="cname-gaze-${id}">${name}</span>
-            <div class="class-bar-wrap"><div class="class-bar" id="cbar-gaze-${id}" style="width:0%"></div></div>
-            <span class="class-pct" id="cpct-gaze-${id}">0%</span>
-          </div>`).join("")}
-      </div>`;
-    }
-
-    // ── Update UI from predictions ───────────────────────────────
     function updateUI(predictions, fps, audio = null) {
-      document.getElementById("fps-badge").textContent = `${fps} FPS`;
-      document.getElementById("hud-fps").textContent = `${fps} fps`;
+      document.getElementById("dash-fps").textContent = fps; document.getElementById("live-fps").textContent = fps;
+      let drScore = 0; let eyeScore = 0; let yawnScore = 0; let distScore = 0; let attnScore = 100; let gazeArr = [0, 0, 0, 0, 0];
 
-      let globalAlert = false;
+      for (const t of TASK_ORDER) {
+        const p = predictions[t]; if (!p) continue; const meta = TASK_META[t];
+        if (t === 'drowsiness') { const v = p.label; const conf = Math.round(p.confidence * 100); document.getElementById('ds-drowsy').textContent = v; document.getElementById('ds-drowsy').className = 'val ' + (v === 'Drowsy' ? 'red' : 'green'); document.getElementById('ds-drowsy-p').textContent = `${conf}%`; drScore = p.pred === meta.alert_class ? conf : 0; document.getElementById('dash-drowsy-pct').textContent = drScore; document.getElementById('dash-drowsy-txt').textContent = drScore > 60 ? 'High' : 'Low'; }
+        if (t === 'eye_state') { document.getElementById('ds-eye').textContent = p.label; document.getElementById('ds-eye-p').textContent = `${Math.round(p.confidence * 100)}%`; eyeScore = p.label === 'Closed' ? Math.round(p.confidence * 100) : 0; if (p.label === 'Closed') attnScore -= 30; }
+        if (t === 'yawn') { document.getElementById('ds-yawn').textContent = p.label; document.getElementById('ds-yawn-p').textContent = `${Math.round(p.confidence * 100)}%`; yawnScore = p.label === 'Yawning' ? Math.round(p.confidence * 100) : 0; }
+        if (t === 'gaze') { document.getElementById('ds-gaze').textContent = p.label; document.getElementById('ds-gaze-p').textContent = `${Math.round(p.confidence * 100)}%`; if (p.label !== 'Forward') attnScore -= 20; if (p.probs) { gazeArr = [p.probs['Forward'] || 0, p.probs['Left'] || 0, p.probs['Right'] || 0, p.probs['Up'] || 0, p.probs['Down'] || 0]; charts.dashGaze.data.datasets[0].data = gazeArr; charts.dashGaze.update('none'); } }
+        if (t === 'emotion') { document.getElementById('ds-emotion').textContent = p.label; document.getElementById('ds-emotion-p').textContent = `${Math.round(p.confidence * 100)}%`; }
+        if (t === 'activity') { const isDist = p.label !== 'Safe Driving' && p.label !== 'None'; document.getElementById('ds-dist').textContent = isDist ? p.label : 'No'; document.getElementById('ds-dist').className = 'val ' + (isDist ? 'red' : 'green'); document.getElementById('ds-dist-p').textContent = `${Math.round(p.confidence * 100)}%`; distScore = isDist ? Math.round(p.confidence * 100) : 0; if (isDist) attnScore -= 40; }
 
-      TASK_ORDER.forEach(task => {
-        const p = predictions[task];
-        if (!p) return;
-        const meta = TASK_META[task];
-
-        const predEl = document.getElementById(`pred-${task}`);
-        const confEl = document.getElementById(`conf-${task}`);
-        const confBar = document.getElementById(`confbar-${task}`);
-        const card = document.getElementById(`card-${task}`);
-
-        const pct = Math.round(p.confidence * 100);
-        const label = p.label;
-        
-        const isAlert = meta.alert_class !== null &&
-          p.pred === meta.alert_class &&
-          p.confidence > (meta.alert_threshold || 0.6);
-          
-        const isWarn = !isAlert && (
-          (task === "activity" && p.label !== "None" && p.label !== "Seatbelt" && p.confidence > 0.5) ||
-          (task === "distraction" && p.label === "Distracted" && p.confidence > 0.5)
-        );
-
-        predEl.textContent = label;
-        predEl.className = "task-pred" + (isAlert ? " alerting" : isWarn ? " warning" : "");
-        confEl.textContent = `${pct}% conf`;
-        confBar.style.width = `${pct}%`;
-        confBar.className = "conf-bar" + (isAlert ? " alerting" : isWarn ? " warning" : "");
-        card.className = "task-card" + (isAlert ? " alerting" : "");
-
-        const probs = p.probs || {};
-        Object.entries(probs).forEach(([className, prob]) => {
-          const isActive = className === label;
-          const bPct = Math.round(prob * 100);
-          const classId = Object.entries(meta.classes).find(([, v]) => v === className)?.[0];
-          if (classId === undefined) return;
-
-          const nameEl = document.getElementById(`cname-${task}-${classId}`);
-          const barEl = document.getElementById(`cbar-${task}-${classId}`);
-          const pctEl = document.getElementById(`cpct-${task}-${classId}`);
-
-          if (nameEl) nameEl.className = "class-name" + (isActive ? " active" : "");
-          if (barEl) {
-            barEl.style.width = `${bPct}%`;
-            barEl.className = "class-bar" + (isActive ? " active" : "");
+        if (p.probs) {
+          for (const [clsId, clsName] of Object.entries(meta.classes)) {
+            const prob = p.probs[clsName] || 0; const pct = (prob * 100).toFixed(1);
+            const lblEl = document.getElementById(`bar-v-${t}-${clsName}`); const barEl = document.getElementById(`bar-f-${t}-${clsName}`);
+            if (lblEl) lblEl.textContent = `${pct}%`; if (barEl) barEl.style.width = `${pct}%`;
           }
-          if (pctEl) {
-            pctEl.textContent = `${bPct}%`;
-            pctEl.className = "class-pct" + (isActive ? " active" : "");
-          }
-        });
-
-        if (task === "gaze") {
-          document.querySelectorAll(".gaze-cell").forEach(el => el.classList.remove("active"));
-          const safeLabel = label.replace(/\s+/g, "-").toLowerCase();
-          const activeCell = document.getElementById(`gaze-cell-${safeLabel}`);
-          if (activeCell) activeCell.classList.add("active");
         }
-
-        if (task === "drowsiness" && isAlert) globalAlert = true;
-      });
-
-      const banner = document.getElementById("alert-banner");
-      const hudAlertEl = document.getElementById("hud-alert-lvl");
-      
-      if (globalAlert) {
-        if (!banner.classList.contains("active")) {
-          banner.classList.add("active");
-          logAlert("DROWSINESS DETECTED", "danger");
-          alertCount++;
-          document.getElementById("alert-count").textContent = alertCount;
-          hudAlertEl.textContent = "CRITICAL";
-          hudAlertEl.style.color = "var(--danger)";
-        }
-      } else {
-        banner.classList.remove("active");
-        hudAlertEl.textContent = "CLEAR";
-        hudAlertEl.style.color = "var(--success)";
       }
-
-      const yawn = predictions["yawn"];
-      const eye = predictions["eye_state"];
-      if (yawn?.label === "Yawning" && yawn.confidence > 0.7) logAlert("Yawning detected", "warn");
-      if (eye?.label === "Closed" && eye.confidence > 0.8) logAlert("Eyes closed", "warn");
-
-      const act = predictions["activity"];
-      if (act && act.label !== "None" && act.label !== "Seatbelt" && act.confidence > 0.65) logAlert(`Behavior: ${act.label}`, "warn");
-
-      const dist = predictions["distraction"];
-      if (dist?.label === "Distracted" && dist.confidence > 0.6) {
-        const actLabel = act?.label && act.label !== "None" ? ` (${act.label})` : "";
-        logAlert(`Distracted${actLabel}`, "danger");
-      }
-
-      const age = predictions["age"];
-      if (age?.label === "Minor" && age.confidence > 0.55) logAlert("Underage detection tripped", "danger");
-
-      // Audio Hud Update
-      const hudAudio = document.getElementById("hud-audio");
-      if (audio && audio.active) {
-        hudAudio.textContent = "DETECTED";
-        hudAudio.style.color = "var(--warning)";
-        const level = audio.level;
-        const label = audio.yamnet_label;
-        const kw = audio.keyword;
-        const score = audio.fusion_score;
-        let msg = `Audio: ${label}`;
-        if (kw) msg += ` | KW: ${kw}`;
-        const logType = (level === "CRITICAL" || level === "ALERT") ? "danger" : "warn";
-        if (level === "CRITICAL" || score > 0.8) {
-          logAlert(`CRITICAL AUDIO: ${label}`, "danger");
-        } else {
-          logAlert(msg, logType);
-        }
-      } else {
-        hudAudio.textContent = "IDLE";
-        hudAudio.style.color = "var(--text-secondary)";
-      }
+      attnScore = Math.max(0, attnScore); document.getElementById('dash-attn-pct').textContent = attnScore; document.getElementById('dash-attn-txt').textContent = attnScore > 70 ? 'Good' : 'Poor';
+      updateChartData(charts.dashDrowsy, drScore); updateChartData(charts.dashAttn, attnScore); updateChartData(charts.l1, drScore); updateChartData(charts.l2, eyeScore); updateChartData(charts.l3, yawnScore); updateChartData(charts.l4, distScore); updateChartData(charts.l5, attnScore);
+      const banner = document.getElementById("alert-banner"); if (drScore > 60 || attnScore < 30) { banner.classList.add("active"); } else { banner.classList.remove("active"); }
     }
 
-    // ── Alert Log ────────────────────────────────────────────────
-    const _loggedAlerts = new Set();
-    function logAlert(msg, level = "warn") {
-      const key = `${msg}-${Math.floor(Date.now() / 3000)}`;
-      if (_loggedAlerts.has(key)) return;
-      _loggedAlerts.add(key);
-
-      const list = document.getElementById("alert-list");
-      if (list.children.length === 1 && list.textContent.includes("Awaiting")) {
-        list.innerHTML = "";
-      }
-      const time = new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      const item = document.createElement("div");
-      item.className = `alert-item ${level}`;
-      item.innerHTML = `<span style="font-family:'JetBrains Mono'; color:var(--text-secondary); font-weight:600;">${time}</span> <span>${msg}</span>`;
-      list.prepend(item);
-      while (list.children.length > 6) list.lastChild.remove();
-    }
-
-    // ── Logic Loop (Counters, Status, SSE, Audio poll) ──────────
-    setInterval(() => {
-      const s = Math.floor((Date.now() - startTime) / 1000);
-      const m = Math.floor(s / 60);
-      document.getElementById("uptime").textContent = m > 0 ? `${m}m ${s % 60}s` : `${s}s`;
-    }, 1000);
-
-    async function checkStatus() {
+    async function fetchDatabaseData() {
       try {
-        const r = await fetch("/status");
-        const data = await r.json();
-        const modelDot = document.getElementById("model-dot");
-        const camDot = document.getElementById("cam-dot");
-        const demoTag = document.getElementById("demo-tag");
+        const r = await fetch("/api/alerts");
+        const alerts = await r.json();
+        const list = document.getElementById("alert-list");
+        list.innerHTML = "";
+        let activeCount = 0;
+        let high = 0, med = 0, info = 0;
+        alerts.forEach(ev => {
+          const item = document.createElement("div"); item.className = `alert-item`;
+          let icnClass = 'info'; let icon = 'ℹ'; let badgeClass = 'info'; let badgeTxt = 'Info';
+          const sev = (ev.severity || "").toUpperCase();
+          if (sev === 'ALERT' || sev === 'CRITICAL' || sev === 'DANGER') { icnClass = 'danger'; icon = '🚨'; badgeClass = 'high'; badgeTxt = 'High'; activeCount++; high++; }
+          else if (sev === 'WARNING' || sev === 'WARN') { icnClass = 'warning'; icon = '⚠️'; badgeClass = 'medium'; badgeTxt = 'Medium'; activeCount++; med++; }
+          else { info++; }
 
-        if (data.model_loaded) {
-          modelDot.className = "dot live";
-          document.getElementById("model-status").textContent = "Neural Engine OK";
-        } else {
-          modelDot.className = "dot warn";
-          document.getElementById("model-status").textContent = "Demo Mode";
-          demoTag.style.display = "block";
-        }
-        if (data.camera_ok) {
-          camDot.className = "dot live";
-          document.getElementById("cam-status").textContent = "Cam Ready";
-        } else {
-          camDot.className = "dot dead";
-          document.getElementById("cam-status").textContent = "Off";
-        }
-      } catch (e) { console.warn(e); }
+          const d = new Date(ev.timestamp * 1000);
+          const timeStr = d.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+          item.innerHTML = `<div class="alert-icon ${icnClass}">${icon}</div><div class="alert-time">${timeStr}</div><div class="alert-msg"><span class="title">${ev.message}</span><span class="sub">Driver: ${ev.driver_name}</span></div><div class="badge ${badgeClass}">${badgeTxt}</div>`;
+          list.appendChild(item);
+        });
+        document.getElementById("alert-count").textContent = alerts.length;
+        document.getElementById("dash-active-alerts").textContent = activeCount;
+
+        charts.chartAlerts.data.datasets[0].data = [high, med, info];
+        charts.chartAlerts.update('none');
+
+        const sr = await fetch("/api/activity_summary");
+        const summary = await sr.json();
+        if (document.getElementById("sum-drowsy")) document.getElementById("sum-drowsy").textContent = summary["Drowsy"] || 0;
+        if (document.getElementById("sum-yawn")) document.getElementById("sum-yawn").textContent = summary["Yawn"] || 0;
+        if (document.getElementById("sum-phone")) document.getElementById("sum-phone").textContent = summary["Phone"] || 0;
+        if (document.getElementById("sum-audio")) document.getElementById("sum-audio").textContent = summary["Audio"] || 0;
+      } catch (e) { }
     }
+    setInterval(fetchDatabaseData, 2000);
+    fetchDatabaseData();
 
-    function connectSSE() {
-      const evtSource = new EventSource("/predictions");
-      evtSource.onopen = () => document.getElementById("conn-overlay").classList.add("hidden");
-      evtSource.onmessage = (e) => {
-        const { predictions, fps, audio } = JSON.parse(e.data);
-        updateUI(predictions, fps, audio);
-      };
-      evtSource.onerror = () => {
-        setTimeout(() => {
-          if (evtSource.readyState === EventSource.CLOSED) {
-            document.getElementById("conn-overlay").classList.remove("hidden");
-            connectSSE();
-          }
-        }, 2000);
-      };
-    }
+    setInterval(() => { const s = Math.floor((Date.now() - startTime) / 1000); document.getElementById("uptime").textContent = `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }, 1000);
 
-    function connectAudioSSE() {
-      const audioSource = new EventSource("/audio_events");
-      audioSource.onmessage = (e) => {
-        const ev = JSON.parse(e.data);
-        let msg = `[Audio] ${ev.label}`;
-        if (ev.kw) msg += ` (KW: ${ev.kw})`;
-        const type = (ev.level === "CRITICAL" || ev.level === "ALERT") ? "danger" : "warn";
-        logAlert(msg, type);
-      };
-    }
+    function connectSSE() { const evtSource = new EventSource("/predictions"); evtSource.onopen = () => document.getElementById("conn-overlay").classList.add("hidden"); evtSource.onmessage = (e) => { const { predictions, fps, audio } = JSON.parse(e.data); updateUI(predictions, fps, audio); }; evtSource.onerror = () => { setTimeout(() => { if (evtSource.readyState === EventSource.CLOSED) { document.getElementById("conn-overlay").classList.remove("hidden"); connectSSE(); } }, 2000); }; }
+    function connectAudioSSE() { const audioSource = new EventSource("/audio_events"); audioSource.onmessage = (e) => { const ev = JSON.parse(e.data); let msg = `Audio: ${ev.label}`; if (ev.kw) msg += ` (KW: ${ev.kw})`; fetchDatabaseData(); }; }
 
-    let _lastVoicePayload = "";
     async function pollVoiceResults() {
       try {
-        const r = await fetch("/voice_results");
-        const data = await r.json();
-        const payload = JSON.stringify(data);
-        if (payload === _lastVoicePayload) return;
-        _lastVoicePayload = payload;
-
-        const tBox = document.getElementById("transcript-box");
+        const r = await fetch("/voice_results"); const data = await r.json();
         if (data.transcript) {
-          tBox.textContent = `"${data.transcript}"`;
-          tBox.style.color = "var(--text-primary)";
-          tBox.style.fontWeight = "600";
+          document.getElementById("transcript-box").textContent = `"${data.transcript}"`;
+        } else {
+          document.getElementById("transcript-box").textContent = "";
         }
-        
-        document.getElementById("voice-keyword").textContent = data.keyword ? `${data.keyword} (${(data.keyword_score || 0).toFixed(2)})` : "—";
-        const spkEl = document.getElementById("voice-speaker");
-        spkEl.textContent = data.speaker ? `${data.speaker} (${(data.speaker_score || 0).toFixed(2)})` : "—";
-        
-        const bertEl = document.getElementById("voice-bert");
-        const bLabel = data.bert_label || "NEUTRAL";
-        bertEl.textContent = `${bLabel} (${(data.bert_score || 0).toFixed(2)})`;
-        bertEl.style.color = bLabel === "NEGATIVE" ? "var(--danger)" : bLabel === "POSITIVE" ? "var(--success)" : "var(--text-primary)";
-
-        const risk = data.fusion_score || 0;
-        document.getElementById("voice-risk-score").textContent = risk.toFixed(3);
-        const riskBar = document.getElementById("voice-risk-bar");
-        riskBar.style.width = `${Math.min(risk * 100, 100)}%`;
-        riskBar.className = "progress-line " + (risk >= 0.7 ? "danger" : risk >= 0.35 ? "warn" : "");
-
-        const badgeEl = document.getElementById("voice-alert-badge");
-        badgeEl.textContent = `LEVEL: ${data.level || "NONE"}`;
-        badgeEl.className = `badge ${(data.level || "none").toLowerCase()}`;
-
-        if (data.latency_ms > 0) document.getElementById("voice-latency").textContent = `${Math.round(data.latency_ms)}ms`;
-      } catch (e) {}
+        document.getElementById("voice-keyword").textContent = data.keyword ? data.keyword : "—";
+        document.getElementById("voice-speaker").textContent = data.speaker ? data.speaker : "—";
+        document.getElementById("voice-speaker-stat").textContent = data.speaker ? data.speaker : "—";
+        const risk = data.fusion_score || 0; document.getElementById("dash-audio-pct").textContent = Math.round(risk * 100); document.getElementById("voice-risk-score").textContent = risk.toFixed(2); updateChartData(charts.dashAudio, risk * 100);
+        document.getElementById("voice-alert-badge").textContent = data.level || "NONE";
+      } catch (e) { }
     }
 
-    // ── Enrollment JS Integration ─────────────────────────────────
-    let enrolPollTimer = null;
-
-    function openEnrolModal() { document.getElementById("enrol-overlay").classList.add("visible"); document.getElementById("driver-name-input").focus(); }
-    function closeEnrolModal() { document.getElementById("enrol-overlay").classList.remove("visible"); if (enrolPollTimer) { clearInterval(enrolPollTimer); enrolPollTimer = null; } }
-
-    function setEnrolStep(step) {
-      for(let i=1; i<=3; i++) { document.getElementById(`estep-${i}`).style.display = (i === step ? "block" : "none"); }
-    }
-
-    async function startEnrolment() {
-      const driverName = document.getElementById("driver-name-input").value.trim() || "Driver";
-      document.getElementById("enrol-begin-btn").disabled = true;
-      setEnrolStep(2);
-      try {
-        const r = await fetch("/audio_enrol", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ seconds: 5, driver_name: driverName }) });
-        const data = await r.json();
-        if (!data.ok) { showEnrolResult(false, "Error", data.msg); return; }
-        enrolPollTimer = setInterval(pollEnrolStatus, 400);
-      } catch (e) { showEnrolResult(false, "Conn Error", "Check network."); }
-    }
-
-    async function pollEnrolStatus() {
-      try {
-        const r = await fetch("/enrol_status");
-        const data = await r.json();
-        const ring = document.getElementById("enrol-ring");
-        const pct = data.progress || 0;
-        const circ = 282.7; 
-        ring.style.strokeDashoffset = circ - (circ * pct / 100);
-        document.getElementById("enrol-pct").textContent = `${pct}%`;
-        document.getElementById("enrol-phase-label").textContent = data.phase.toUpperCase();
-
-        if (data.phase === "done") {
-          clearInterval(enrolPollTimer);
-          setTimeout(() => {
-            showEnrolResult(true, "Enrolled", `Voice ID setup complete for ${data.driver_name}`);
-            updateSpeakerBadge(true, data.driver_name);
-          }, 300);
-        } else if (data.phase === "error") {
-          clearInterval(enrolPollTimer);
-          showEnrolResult(false, "Failed", data.message);
-        }
-      } catch (e) {}
-    }
-
-    function showEnrolResult(success, title, msg) {
-      setEnrolStep(3);
-      document.getElementById("enrol-result-title").textContent = title;
-      document.getElementById("enrol-result-msg").textContent = msg;
-    }
-
-    function updateSpeakerBadge(enrolled, name) {
-      const badge = document.getElementById("speaker-badge");
-      const txt = document.getElementById("speaker-badge-text");
-      if (enrolled) {
-        badge.classList.add("enrolled");
-        txt.textContent = name;
-        // Also Update visual display in header
-        document.getElementById("active-driver-display").textContent = name;
-      }
-    }
-
-    async function checkSpeakerStatus() {
-      try {
-        const r = await fetch("/status");
-        const d = await r.json();
-        if (d.speaker?.enrolled) updateSpeakerBadge(true, "Driver Verified");
-      } catch(e){}
-    }
-
-    // ── Face Verification Logic ───────────────────────────────────
-    let facePollTimer = null;
-    let faceVerifyPollTimer = null;
-    let faceVerifyActive = false;
-
-    function openFaceEnrolModal() { document.getElementById("face-enrol-overlay").classList.add("visible"); }
-    function closeFaceEnrolModal() { document.getElementById("face-enrol-overlay").classList.remove("visible"); }
-
-    function setFaceEnrolStep(step) {
-      for(let i=1; i<=3; i++) { document.getElementById(`fstep-${i}`).style.display = (i === step ? "block" : "none"); }
-    }
-
-    async function startFaceEnrolment() {
-      const name = document.getElementById("face-driver-name-input").value.trim() || "Driver";
-      setFaceEnrolStep(2);
-      try {
-        const r = await fetch("/face_enrol", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ driver_name: name }) });
-        facePollTimer = setInterval(pollFaceEnrolStatus, 500);
-      } catch(e){}
-    }
-
-    async function pollFaceEnrolStatus() {
-      try {
-        const r = await fetch("/face_enrol_status");
-        const d = await r.json();
-        const ring = document.getElementById("face-enrol-ring");
-        const circ = 282.7;
-        ring.style.strokeDashoffset = circ - (circ * d.progress / 100);
-        document.getElementById("face-enrol-pct").textContent = `${d.progress}%`;
-        
-        if (d.phase === "done") {
-          clearInterval(facePollTimer);
-          setFaceEnrolStep(3);
-          document.getElementById("face-badge").classList.add("enrolled");
-          document.getElementById("face-badge-text").textContent = d.driver_name || "Verified Face";
-          document.getElementById("active-driver-display").textContent = d.driver_name || "Active Driver";
-        } else if (d.phase === "error") {
-          clearInterval(facePollTimer);
-          setFaceEnrolStep(3);
-          document.getElementById("face-enrol-result-title").textContent = "Failed";
-          document.getElementById("face-enrol-result-msg").textContent = d.message;
-        }
-      } catch(e){}
-    }
-
-    async function toggleFaceVerify() {
-      const btn = document.getElementById("face-verify-toggle-btn");
-      if (faceVerifyActive) {
-        try { await fetch("/face_verify_stop", { method: "POST" }); } catch(e){}
-        faceVerifyActive = false;
-        btn.classList.remove("active");
-        btn.textContent = "▶ START IDENTITY VERIFY";
-        document.getElementById("face-verify-dot").classList.remove("active");
-        clearInterval(faceVerifyPollTimer);
-        return;
-      }
-      try {
-        await fetch("/face_verify_start", { method: "POST", body: JSON.stringify({ driver_name: "Driver" }) });
-        faceVerifyActive = true;
-        btn.classList.add("active");
-        btn.textContent = "■ STOP VERIFY SCAN";
-        document.getElementById("face-verify-dot").classList.add("active");
-        faceVerifyPollTimer = setInterval(pollFaceVerifyStatus, 600);
-      } catch(e){}
-    }
+    async function checkStatus() { try { const r = await fetch("/status"); const data = await r.json(); if (data.model_loaded) { document.getElementById("model-dot").className = "dot"; document.getElementById("model-status").textContent = "System Active"; } if (data.camera_ok) { document.getElementById("cam-dot").style.background = "var(--success)"; } } catch (e) { } }
 
     async function pollFaceVerifyStatus() {
       try {
-        const r = await fetch("/face_verify_status");
-        const d = await r.json();
-        const badge = document.getElementById("face-match-badge");
-        
-        document.getElementById("face-similarity").textContent = d.similarity ? d.similarity.toFixed(3) : "—";
-        document.getElementById("face-liveness").textContent = d.liveness_label || "—";
-        
-        const bar = document.getElementById("face-sim-bar");
-        const p = d.similarity * 100;
-        bar.style.width = `${p}%`;
-        bar.style.background = d.match ? "var(--success)" : "var(--accent)";
+        const r = await fetch("/face_verify_status"); const d = await r.json();
 
-        if (d.liveness_label === "No Face") {
-          badge.textContent = "NO FACE"; badge.style.color = "var(--text-secondary)";
+        document.getElementById('hud-live').textContent = d.liveness_label;
+        document.getElementById('foot-live').textContent = d.liveness_score ? d.liveness_score.toFixed(2) : '0.0';
+
+        document.getElementById("face-sim-val").textContent = d.similarity ? (d.similarity * 100).toFixed(1) + '%' : "—";
+        const liveVal = document.getElementById("face-live-val");
+        liveVal.textContent = d.liveness_label || "—";
+        if (d.liveness_label === "REAL") {
+          liveVal.style.color = "var(--success)";
+        } else if (d.liveness_label === "SPOOF") {
+          liveVal.style.color = "var(--danger)";
+        } else {
+          liveVal.style.color = "var(--text-secondary)";
+        }
+
+        const badge = document.getElementById("face-match-badge");
+        const avatar = document.getElementById("driver-avatar-img");
+        const svgFallback = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fff'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+
+        if (d.liveness_label === "No Face" || !d.active) {
+          badge.textContent = "UNVERIFIED"; badge.style.color = "var(--text-secondary)";
+          document.getElementById('hud-face').textContent = 'NO'; document.getElementById('hud-face').style.color = 'var(--danger)';
+          document.getElementById('foot-face').textContent = 'No'; document.getElementById('foot-face').style.color = 'var(--danger)';
+          avatar.src = svgFallback;
+          document.getElementById("face-name-val").textContent = "—";
         } else if (d.match) {
-          badge.textContent = "MATCH CONFIRMED"; badge.style.color = "var(--success)";
-          if (d.driver_name) document.getElementById("active-driver-display").textContent = d.driver_name;
+          badge.innerHTML = "VERIFIED ✓"; badge.style.color = "var(--success)";
+          document.getElementById("face-name-val").textContent = d.driver_name;
+          document.getElementById('hud-id').textContent = 'VERIFIED'; document.getElementById('hud-id').style.color = 'var(--success)';
+          document.getElementById('hud-face').textContent = 'DETECTED'; document.getElementById('hud-face').style.color = 'var(--success)';
+          document.getElementById('foot-face').textContent = 'Yes'; document.getElementById('foot-face').style.color = 'var(--success)';
+          document.getElementById('foot-id').textContent = (d.similarity).toFixed(2);
+          avatar.src = `/api/driver_image/${d.driver_name}?t=${new Date().getTime()}`;
         } else {
           badge.textContent = "UNRECOGNIZED"; badge.style.color = "var(--warning)";
+          avatar.src = svgFallback;
+          document.getElementById("face-name-val").textContent = "—";
         }
-      } catch(e){}
+      } catch (e) { }
     }
 
-    // ── Bootstrap Init ──────────────────────────────────────────
-    buildSidebar();
-    checkStatus();
-    setInterval(checkStatus, 8000);
-    connectSSE();
-    connectAudioSSE();
-    setInterval(pollVoiceResults, 500);
-    checkSpeakerStatus();
-    
-    // Start-up fetch of face data
-    async function getFaceData() {
-      try {
-        const r = await fetch("/face_status");
-        const d = await r.json();
-        if (d.enrolled && d.enrolled_names.length > 0) {
-          document.getElementById("face-badge").classList.add("enrolled");
-          document.getElementById("face-badge-text").textContent = d.enrolled_names[0];
-          document.getElementById("active-driver-display").textContent = d.enrolled_names[0];
-        }
-      } catch(e){}
+    function openEnrolModal() { document.getElementById("enrol-overlay").classList.add("visible"); }
+    function closeEnrolModal() {
+      document.getElementById("enrol-overlay").classList.remove("visible");
+      setTimeout(() => {
+        document.getElementById("estep-1").style.display = "block";
+        document.getElementById("estep-2").style.display = "none";
+        document.getElementById("estep-3").style.display = "none";
+      }, 300);
     }
-    getFaceData();
-
-    // ── Tab Navigation Script ──────────────────────────────────────
-    function switchTab(tabName) {
-      // Set all panes to hidden
-      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
-      // Set all buttons inactive
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      
-      // Activate targeted elements
-      document.getElementById(`tab-${tabName}`).classList.add('active');
-      
-      // Map logic to match the click sender button
-      const btns = document.querySelectorAll('.tab-btn');
-      if(tabName === 'vision') btns[0].classList.add('active');
-      else if(tabName === 'speech') btns[1].classList.add('active');
-      else if(tabName === 'face') btns[2].classList.add('active');
+    function openFaceEnrolModal() { document.getElementById("face-enrol-overlay").classList.add("visible"); }
+    function closeFaceEnrolModal() {
+      document.getElementById("face-enrol-overlay").classList.remove("visible");
+      setTimeout(() => {
+        document.getElementById("fstep-1").style.display = "block";
+        document.getElementById("fstep-2").style.display = "none";
+        document.getElementById("fstep-3").style.display = "none";
+      }, 300);
     }
 
+    let faceVerifyActive = false;
+    async function toggleFaceVerify() {
+      const btn = document.getElementById("face-verify-toggle-btn");
+      if (!faceVerifyActive) {
+        const name = document.getElementById("face-driver-name-input").value;
+        const payload = name ? { driver_name: name } : {};
+        await fetch("/face_verify_start", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        btn.textContent = "Stop Verify Scan";
+        btn.style.color = "var(--danger)";
+        faceVerifyActive = true;
+      } else {
+        await fetch("/face_verify_stop", { method: "POST" });
+        btn.textContent = "Start Verify Scan";
+        btn.style.color = "";
+        faceVerifyActive = false;
+      }
+    }
+
+    async function startFaceEnrolment() {
+      const name = document.getElementById("face-driver-name-input").value;
+      if (!name) return alert("Please enter a driver name.");
+
+      document.getElementById("fstep-1").style.display = "none";
+      document.getElementById("fstep-2").style.display = "block";
+
+      await fetch("/face_enrol", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ driver_name: name })
+      });
+
+      const poll = setInterval(async () => {
+        try {
+          const r = await fetch("/face_enrol_status");
+          const d = await r.json();
+          document.getElementById("face-enrol-pct").textContent = d.progress + "%";
+          if (d.phase === "done" || d.phase === "error") {
+            clearInterval(poll);
+            document.getElementById("fstep-2").style.display = "none";
+            document.getElementById("fstep-3").style.display = "block";
+            document.getElementById("face-enrol-result-title").textContent = d.phase === "done" ? "Registered" : "Failed";
+            document.getElementById("face-enrol-result-title").style.color = d.phase === "done" ? "var(--success)" : "var(--danger)";
+            document.getElementById("face-enrol-result-msg").textContent = d.message || "Complete ✓";
+          }
+        } catch (e) { }
+      }, 500);
+    }
+
+    async function startEnrolment() {
+      const name = document.getElementById("driver-name-input").value;
+      if (!name) return alert("Please enter a driver name.");
+
+      document.getElementById("estep-1").style.display = "none";
+      document.getElementById("estep-2").style.display = "block";
+
+      await fetch("/audio_enrol", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ driver_name: name, seconds: 5 })
+      });
+
+      const poll = setInterval(async () => {
+        try {
+          const r = await fetch("/enrol_status");
+          const d = await r.json();
+          document.getElementById("enrol-pct").textContent = d.progress + "%";
+          document.getElementById("enrol-phase-label").textContent = d.message;
+          if (d.phase === "done" || d.phase === "error") {
+            clearInterval(poll);
+            document.getElementById("estep-2").style.display = "none";
+            document.getElementById("estep-3").style.display = "block";
+            document.getElementById("enrol-result-title").textContent = d.phase === "done" ? "Complete" : "Failed";
+            document.getElementById("enrol-result-title").style.color = d.phase === "done" ? "var(--success)" : "var(--danger)";
+            document.getElementById("enrol-result-msg").textContent = d.message || "Complete ✓";
+          }
+        } catch (e) { }
+      }, 500);
+    }
+
+    checkStatus(); setInterval(checkStatus, 8000); connectSSE(); connectAudioSSE(); setInterval(pollVoiceResults, 1000); setInterval(pollFaceVerifyStatus, 1000);
   </script>
 </body>
+
 </html>

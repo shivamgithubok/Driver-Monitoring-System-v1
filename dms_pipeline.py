@@ -258,11 +258,11 @@ class SpeechFSM:
         if not self.in_speech and self.speech_run >= START_SPEECH_FRAMES:
             self.in_speech = True
             return "start"
-        if self.in_speech and is_speech:
+        if self.in_speech:
+            if self.silence_run >= END_SILENCE_FRAMES:
+                self.in_speech = False
+                return "end"
             return "continue"
-        if self.in_speech and self.silence_run >= END_SILENCE_FRAMES:
-            self.in_speech = False
-            return "end"
         return "idle"
 
 
@@ -394,14 +394,16 @@ class DMSPipeline:
         print(f"[ENROL] Recording driver voice for {seconds}s — speak now!")
         frames = []
 
-        def _cb(indata, f, t, s):
-            frames.append(indata.copy().reshape(-1))
+        # Tap into the already-running pipeline queue instead of opening a second stream
+        self._enrol_capture = frames
+        time.sleep(seconds)
+        self._enrol_capture = None
 
-        with sd.InputStream(samplerate=SR, channels=1, dtype="float32",
-                            blocksize=CHUNK, callback=_cb):
-            time.sleep(seconds)
+        if not frames:
+            print("[ENROL] No audio captured")
+            return
 
-        raw   = np.concatenate(frames)
+        raw = np.concatenate(frames)
         # Strip silence so voiceprint is speech-only
         clean = _filter_speech_frames(raw)
         clean = normalize_audio(clean, target_rms=0.05)
@@ -454,7 +456,7 @@ class DMSPipeline:
 
         print("[DMS] Opening mic stream…")
         try:
-            stream = sd.InputStream(
+            self._stream = sd.InputStream(
                 samplerate=SR,
                 channels=CHANNELS,
                 dtype="float32",
@@ -462,7 +464,7 @@ class DMSPipeline:
                 device=self.mic_device,
                 callback=_cb,
             )
-            stream.start()
+            self._stream.start()
         except Exception as e:
             print(f"[DMS] Mic open failed: {e}")
             self._running = False
@@ -477,6 +479,8 @@ class DMSPipeline:
                 continue
 
             raw   = chunk.astype(np.float32)
+            if getattr(self, '_enrol_capture', None) is not None:
+                self._enrol_capture.append(raw.copy())
             clean = normalize_audio(raw, target_rms=0.05)
 
             pcm = float_to_pcm16(raw)
@@ -575,8 +579,8 @@ class DMSPipeline:
                     f"lat={total_latency:.0f}ms"
                 )
 
-        stream.stop()
-        stream.close()
+        self._stream.stop()
+        self._stream.close()
         print("[DMS] Audio pipeline stopped")
 
 
